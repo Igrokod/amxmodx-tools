@@ -1,0 +1,7 @@
+[package]
+name = "rxxma"
+version = "0.0.1"
+authors = ["Fedcomp"]
+
+[dependencies]
+clap = "^2.30.0"
