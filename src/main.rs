@@ -1,14 +1,16 @@
+extern crate rxxma;
 extern crate clap;
 
 use std::io::prelude::*;
 use std::fs::File;
 use clap::{Arg, App};
+use rxxma::amxmodx::File as AmxmodxFile;
 
 // TODO: Custom panic handler
 macro_rules! die {
     ($fmt:expr) => (print!(concat!($fmt, "\n")));
     ($fmt:expr, $($arg:tt)*) => ({
-        print!(concat!($fmt, "\n"), $($arg)*);
+        eprintln!($fmt, $($arg)*);
         std::process::exit(-1);
     });
 }
@@ -31,9 +33,14 @@ fn main() {
         Err(e) => die!("Cannot open file: {}", e)
     };
 
-    let mut contents: Vec<u8> = vec![];
-    match file.read_to_end(&mut contents) {
+    let mut file_contents: Vec<u8> = Vec::new();
+    match file.read_to_end(&mut file_contents) {
         Ok(_) => (),
         Err(e) => die!("Cannot read file: {}", e)
+    };
+
+    let _amxmodx_file = match AmxmodxFile::from(&file_contents) {
+        Ok(a) => a,
+        Err(e) => die!("File parsing error: {}", e)
     };
 }

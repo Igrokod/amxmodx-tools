@@ -5,3 +5,4 @@ authors = ["Fedcomp"]
 
 [dependencies]
 clap = "^2.30.0"
+byteorder = "1"
