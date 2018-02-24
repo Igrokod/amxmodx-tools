@@ -4,6 +4,7 @@ use std::str;
 
 pub struct File<'a> {
     pub bin: &'a [u8],
+    pub sections: u8,
 }
 
 impl<'a> File<'a> {
@@ -17,31 +18,35 @@ impl<'a> File<'a> {
         match reader.read_u32::<LittleEndian>() {
             Ok(magick) => {
                 if magick != File::MAGIC {
-                    return Result::Err("Invalid file magic");
+                    return Err("Invalid file magic");
                 }
             }
-            Err(_) => return Result::Err("Magic EOF"),
+            Err(_) => return Err("Magic EOF"),
         };
 
         // version
         match reader.read_u16::<LittleEndian>() {
             Ok(version) => {
                 if version != File::COMPATIBLE_VERSION {
-                    return Result::Err("Incompatible file version");
+                    return Err("Incompatible file version");
                 }
             }
-            Err(_) => return Result::Err("Version EOF"),
+            Err(_) => return Err("Version EOF"),
         };
 
         // sections count
         let sections = match reader.read_u8() {
-            Ok(s) => s,
-            Err(_) => return Result::Err("Sections EOF"),
+            Ok(s) => {
+                // if (s < 1 || s >)
+                s
+            }
+            Err(_) => return Err("Sections EOF"),
         };
 
-        println!("sections: {}", sections);
-
-        Ok(File { bin: bin })
+        Ok(File {
+            bin: bin,
+            sections: sections,
+        })
     }
 }
 
@@ -51,14 +56,19 @@ mod tests {
     use std::fs::File;
     use super::File as AmxmodxFile;
 
-    #[test]
-    fn it_load_file_when_binary_is_correct() {
-        let mut amxmodx_bin: Vec<u8> = Vec::new();
+    fn load_fixture(filename: &str) -> Vec<u8> {
+        let mut file_bin: Vec<u8> = Vec::new();
         {
-            let mut file = File::open("test/fixtures/simple.amxx183").unwrap();
-            file.read_to_end(&mut amxmodx_bin).unwrap();
+            let mut file = File::open(format!("test/fixtures/{}", filename)).unwrap();
+            file.read_to_end(&mut file_bin).unwrap();
         }
 
+        file_bin
+    }
+
+    #[test]
+    fn it_load_file_when_binary_is_correct() {
+        let amxmodx_bin = load_fixture("simple.amxx183");
         assert!(AmxmodxFile::from(&amxmodx_bin).is_ok());
     }
 
@@ -66,21 +76,21 @@ mod tests {
     fn it_err_on_empty_file() {
         let amxmodx_bin = vec![];
         let result = AmxmodxFile::from(&amxmodx_bin);
-        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "Magic EOF");
     }
 
     #[test]
     fn it_err_on_magic_eof() {
         let amxmodx_bin = vec![0, 0, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
-        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "Magic EOF");
     }
 
     #[test]
     fn it_err_on_invalid_magic() {
         let amxmodx_bin = vec![0, 0, 0, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
-        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "Invalid file magic");
     }
 
     #[test]
@@ -88,7 +98,7 @@ mod tests {
         // Correct magic, incorrect version
         let amxmodx_bin = vec![88, 88, 77, 65, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
-        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "Version EOF");
     }
 
     #[test]
@@ -96,6 +106,14 @@ mod tests {
         // Correct magic, incorrect version
         let amxmodx_bin = vec![88, 88, 77, 65, 0, 4];
         let result = AmxmodxFile::from(&amxmodx_bin);
-        assert!(result.is_err());
+        assert_eq!(result.err().unwrap(), "Incompatible file version");
+    }
+
+    #[test]
+    fn it_err_on_sections_eof() {
+        // Correct magic, correct version, no section byte
+        let amxmodx_bin = vec![88, 88, 77, 65, 0, 3];
+        let result = AmxmodxFile::from(&amxmodx_bin);
+        assert_eq!(result.err().unwrap(), "Sections EOF");
     }
 }
