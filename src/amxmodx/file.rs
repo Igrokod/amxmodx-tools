@@ -1,10 +1,9 @@
 use std::io::Cursor;
-use std::io::prelude::*;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
 
 pub struct File<'a> {
-    bin: &'a [u8],
+    pub bin: &'a [u8],
 }
 
 impl<'a> File<'a> {
@@ -55,21 +54,21 @@ mod tests {
 
     #[test]
     fn it_err_on_empty_file() {
-        let mut amxmodx_bin: Vec<u8> = vec![];
+        let amxmodx_bin = vec![];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
     }
 
     #[test]
     fn it_err_on_short_file() {
-        let mut amxmodx_bin: Vec<u8> = vec![0, 0, 0];
+        let amxmodx_bin = vec![0, 0, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
     }
 
     #[test]
     fn it_err_on_invalid_magic() {
-        let mut amxmodx_bin: Vec<u8> = vec![0, 0, 0, 0];
+        let amxmodx_bin = vec![0, 0, 0, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
     }
@@ -77,7 +76,7 @@ mod tests {
     #[test]
     fn it_err_on_incompatible_version() {
         // Correct magic, incorrect version
-        let mut amxmodx_bin: Vec<u8> = vec![88, 88, 77, 65, 0, 4];
+        let amxmodx_bin = vec![88, 88, 77, 65, 0, 4];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
     }
