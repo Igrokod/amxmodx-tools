@@ -41,8 +41,13 @@ fn main() {
         Err(e) => die!("Cannot read file: {}", e),
     };
 
-    let _amxmodx_file = match AmxmodxFile::from(&file_contents) {
+    let amxmodx_file = match AmxmodxFile::from(&file_contents) {
         Ok(a) => a,
         Err(e) => die!("File parsing error: {}", e),
     };
+
+    println!(
+        "AmXModX file sections: {:?}",
+        amxmodx_file.sections().unwrap()
+    );
 }
