@@ -37,7 +37,14 @@ impl<'a> File<'a> {
         // sections count
         let sections = match reader.read_u8() {
             Ok(s) => {
-                // if (s < 1 || s >)
+                if s < 1 {
+                    return Err("Zero sections amount");
+                }
+
+                if s > 2 {
+                    return Err("More than two sections (malicious file?)");
+                }
+
                 s
             }
             Err(_) => return Err("Sections EOF"),
@@ -115,5 +122,24 @@ mod tests {
         let amxmodx_bin = vec![88, 88, 77, 65, 0, 3];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert_eq!(result.err().unwrap(), "Sections EOF");
+    }
+
+    #[test]
+    fn it_err_on_zero_sections() {
+        // Correct magic, correct version, no section byte
+        let amxmodx_bin = vec![88, 88, 77, 65, 0, 3, 0];
+        let result = AmxmodxFile::from(&amxmodx_bin);
+        assert_eq!(result.err().unwrap(), "Zero sections amount");
+    }
+
+    #[test]
+    fn it_err_on_more_than_two_sections() {
+        // Correct magic, correct version, no section byte
+        let amxmodx_bin = vec![88, 88, 77, 65, 0, 3, 3];
+        let result = AmxmodxFile::from(&amxmodx_bin);
+        assert_eq!(
+            result.err().unwrap(),
+            "More than two sections (malicious file?)"
+        );
     }
 }
