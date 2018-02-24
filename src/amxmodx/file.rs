@@ -11,25 +11,35 @@ impl<'a> File<'a> {
     const COMPATIBLE_VERSION: u16 = 768;
 
     pub fn from(bin: &'a [u8]) -> Result<File, &str> {
-        if bin.len() == 0 {
-            return Result::Err("Empty file");
-        }
-
-        if bin.len() < 4 {
-            return Result::Err("Invalid file");
-        }
-
         let mut reader = Cursor::new(bin);
 
-        let magick = reader.read_u32::<LittleEndian>().unwrap();
-        if magick != File::MAGIC {
-            return Result::Err("Invalid file magic");
-        }
+        // magic
+        match reader.read_u32::<LittleEndian>() {
+            Ok(magick) => {
+                if magick != File::MAGIC {
+                    return Result::Err("Invalid file magic");
+                }
+            }
+            Err(_) => return Result::Err("Magic EOF"),
+        };
 
-        let version = reader.read_u16::<LittleEndian>().unwrap();
-        if version != File::COMPATIBLE_VERSION {
-            return Result::Err("Incompatible file version");
-        }
+        // version
+        match reader.read_u16::<LittleEndian>() {
+            Ok(version) => {
+                if version != File::COMPATIBLE_VERSION {
+                    return Result::Err("Incompatible file version");
+                }
+            }
+            Err(_) => return Result::Err("Version EOF"),
+        };
+
+        // sections count
+        let sections = match reader.read_u8() {
+            Ok(s) => s,
+            Err(_) => return Result::Err("Sections EOF"),
+        };
+
+        println!("sections: {}", sections);
 
         Ok(File { bin: bin })
     }
@@ -42,7 +52,7 @@ mod tests {
     use super::File as AmxmodxFile;
 
     #[test]
-    fn it_load_from_binary() {
+    fn it_load_file_when_binary_is_correct() {
         let mut amxmodx_bin: Vec<u8> = Vec::new();
         {
             let mut file = File::open("test/fixtures/simple.amxx183").unwrap();
@@ -60,7 +70,7 @@ mod tests {
     }
 
     #[test]
-    fn it_err_on_short_file() {
+    fn it_err_on_magic_eof() {
         let amxmodx_bin = vec![0, 0, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
@@ -69,6 +79,14 @@ mod tests {
     #[test]
     fn it_err_on_invalid_magic() {
         let amxmodx_bin = vec![0, 0, 0, 0];
+        let result = AmxmodxFile::from(&amxmodx_bin);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn it_err_on_version_eof() {
+        // Correct magic, incorrect version
+        let amxmodx_bin = vec![88, 88, 77, 65, 0];
         let result = AmxmodxFile::from(&amxmodx_bin);
         assert!(result.is_err());
     }
