@@ -134,12 +134,13 @@ impl Plugin {
     }
 
     pub fn cod_slice(&self) -> &[u8] {
+        // FIXME: Error handling when cod does not match
         // Calculate from start of next segment
         let cod_size = self.dat - self.cod;
         &self.bin[self.cod..(self.cod + cod_size)]
     }
 
-    pub fn opcodes(&self) {
+    pub fn opcodes(&self) -> Result<Vec<Opcode>, &str> {
         let mut cod_reader = Cursor::new(self.cod_slice());
         let mut opcodes: Vec<Opcode> = Vec::new();
 
@@ -147,12 +148,17 @@ impl Plugin {
         // Skip first two opcodes for some reason
         cod_reader.read_u32::<LittleEndian>().unwrap();
         cod_reader.read_u32::<LittleEndian>().unwrap();
+
         loop {
             match Opcode::read_from(&mut cod_reader) {
-                Some(o) => opcodes.push(o),
-                None => break,
+                // FIXME: Test all cases
+                Ok(Some(o)) => opcodes.push(o),
+                Ok(None) => break,
+                Err(e) => return Err(e),
             }
         }
+
+        Ok(opcodes)
     }
 }
 

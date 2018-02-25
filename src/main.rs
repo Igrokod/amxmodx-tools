@@ -66,5 +66,5 @@ fn main() {
         Err(e) => die!("Amxmod unpack/parse error: {}", e),
     };
 
-    println!("{:?}", amxmod_plugin);
+    println!("{:?}", amxmod_plugin.opcodes());
 }

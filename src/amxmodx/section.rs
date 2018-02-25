@@ -107,7 +107,7 @@ mod tests {
         let amxmodx_bin = load_fixture("simple.amxx183");
         let section_bin = &amxmodx_bin[AMXX_HEADER_SIZE..];
         let section = Section::from(section_bin).unwrap();
-        let amx_plugin = section.unpack_section(&amxmodx_bin).unwrap();
+        section.unpack_section(&amxmodx_bin).unwrap();
     }
 
     #[test]
