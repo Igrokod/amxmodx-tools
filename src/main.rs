@@ -54,7 +54,7 @@ fn main() {
         Err(e) => die!("Sections read error: {}", e),
     };
 
-    println!("AmXModX file sections: {:?}", sections);
+    // println!("AmXModX file sections: {:?}", sections);
 
     let section_32bit = match sections.into_iter().find(|ref s| s.cellsize == 4) {
         Some(s) => s,
@@ -66,5 +66,9 @@ fn main() {
         Err(e) => die!("Amxmod unpack/parse error: {}", e),
     };
 
-    println!("{:?}", amxmod_plugin.opcodes());
+    let opcodes = amxmod_plugin.opcodes().unwrap();
+
+    for op in &opcodes {
+        println!("0x{:X}\t\t\t{:?}", op.address, op.code);
+    }
 }

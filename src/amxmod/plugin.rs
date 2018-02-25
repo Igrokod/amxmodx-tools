@@ -1,7 +1,6 @@
 use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
-use std::io::Read;
 use super::Opcode;
 
 #[derive(Debug, PartialEq)]

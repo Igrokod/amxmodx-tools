@@ -1,11 +1,11 @@
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
-use std::io::Read;
+use std::io::{Read, Seek, SeekFrom};
 use enum_primitive::FromPrimitive;
 
 enum_from_primitive! {
 #[derive(Debug, PartialEq)]
-enum OpcodeType {
+pub enum OpcodeType {
     OP_NONE, // invalid opcode
     OP_LOAD_PRI,
     OP_LOAD_ALT,
@@ -148,11 +148,14 @@ enum OpcodeType {
 
 #[derive(Debug, PartialEq)]
 pub struct Opcode {
-    code: OpcodeType,
+    pub code: OpcodeType,
+    pub address: usize,
 }
 
 impl Opcode {
-    pub fn read_from<T: Read>(cod_reader: &mut T) -> Result<Option<Opcode>, &'static str> {
+    pub fn read_from<T: Read + Seek>(cod_reader: &mut T) -> Result<Option<Opcode>, &'static str> {
+        // TODO: Error handling?
+        let address = cod_reader.seek(SeekFrom::Current(0)).unwrap();
         let code = match cod_reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
             Err(e) => return Ok(None), // Return no opcode, end of cod section
@@ -164,7 +167,10 @@ impl Opcode {
         };
 
         // FIXME: Check for invalid opcode
-        Ok(Some(Opcode { code: enum_code }))
+        Ok(Some(Opcode {
+            code: enum_code,
+            address: address as usize,
+        }))
     }
 }
 
