@@ -17,6 +17,7 @@ pub struct Plugin {
     pubvars: u32,
     tags: u32,
     nametable: u32,
+    bin: Vec<u8>,
 }
 
 impl Plugin {
@@ -126,6 +127,7 @@ impl Plugin {
             pubvars: pubvars,
             tags: tags,
             nametable: nametable,
+            bin: bin.to_vec(),
         })
     }
 }
@@ -164,6 +166,7 @@ mod tests {
             pubvars: 72,
             tags: 72,
             nametable: 80,
+            bin: amxmod_bin.to_vec(),
         };
         assert_eq!(extracted_plugin, expected_plugin);
     }
