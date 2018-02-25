@@ -6,3 +6,4 @@ authors = ["Fedcomp"]
 [dependencies]
 clap = "^2.30.0"
 byteorder = "1"
+flate2 = { version = "1.0", features = ["rust_backend"], default-features = false }

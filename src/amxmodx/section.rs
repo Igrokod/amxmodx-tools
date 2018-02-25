@@ -1,6 +1,9 @@
 use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
+use flate2::read::ZlibDecoder;
+use std::io::Read;
+use super::super::amxmod::Plugin;
 
 #[derive(Debug, PartialEq)]
 pub struct Section {
@@ -8,7 +11,7 @@ pub struct Section {
     pub disksize: u32,
     pub imagesize: u32,
     pub memsize: u32,
-    pub offset: u32,
+    pub offset: usize,
 }
 
 impl Section {
@@ -53,8 +56,21 @@ impl Section {
             disksize: disksize,
             imagesize: imagesize,
             memsize: memsize,
-            offset: offset,
+            offset: offset as usize,
         })
+    }
+
+    pub fn unpack_section<'a>(&self, bin: &[u8]) -> Result<Plugin, &'a str> {
+        let gzip_slice = &bin[self.offset..];
+        let mut amx_bin: Vec<u8> = Vec::new();
+
+        match ZlibDecoder::new(gzip_slice).read_to_end(&mut amx_bin) {
+            Ok(_) => (),
+            Err(_) => return Err("amx gz unpack error")
+        };
+
+        let plugin = Plugin::from(&amx_bin);
+        plugin
     }
 }
 
@@ -83,6 +99,15 @@ mod tests {
         // Skip amxmodx header, leaving only section headers
         let section_bin = &amxmodx_bin[AMXX_HEADER_SIZE..];
         assert!(Section::from(section_bin).is_ok());
+    }
+
+    #[test]
+    fn it_unpack_section_without_errors() {
+        // File with single section.
+        let amxmodx_bin = load_fixture("simple.amxx183");
+        let section_bin = &amxmodx_bin[AMXX_HEADER_SIZE..];
+        let section = Section::from(section_bin).unwrap();
+        let amx_plugin = section.unpack_section(&amxmodx_bin).unwrap();
     }
 
     #[test]
