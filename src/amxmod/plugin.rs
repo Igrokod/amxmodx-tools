@@ -1,22 +1,24 @@
 use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
+use std::io::Read;
+use super::Opcode;
 
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
     flags: u16,
     defsize: u16,
-    cod: u32,
-    dat: u32,
-    hea: u32,
-    stp: u32,
-    cip: u32,
-    publics: u32,
-    natives: u32,
-    libraries: u32,
-    pubvars: u32,
-    tags: u32,
-    nametable: u32,
+    cod: usize,
+    dat: usize,
+    hea: usize,
+    stp: usize,
+    cip: usize,
+    publics: usize,
+    natives: usize,
+    libraries: usize,
+    pubvars: usize,
+    tags: usize,
+    nametable: usize,
     bin: Vec<u8>,
 }
 
@@ -116,19 +118,41 @@ impl Plugin {
         Ok(Plugin {
             flags: flags,
             defsize: defsize,
-            cod: cod,
-            dat: dat,
-            hea: hea,
-            stp: stp,
-            cip: cip,
-            publics: publics,
-            natives: natives,
-            libraries: libraries,
-            pubvars: pubvars,
-            tags: tags,
-            nametable: nametable,
+            cod: cod as usize,
+            dat: dat as usize,
+            hea: hea as usize,
+            stp: stp as usize,
+            cip: cip as usize,
+            publics: publics as usize,
+            natives: natives as usize,
+            libraries: libraries as usize,
+            pubvars: pubvars as usize,
+            tags: tags as usize,
+            nametable: nametable as usize,
             bin: bin.to_vec(),
         })
+    }
+
+    pub fn cod_slice(&self) -> &[u8] {
+        // Calculate from start of next segment
+        let cod_size = self.dat - self.cod;
+        &self.bin[self.cod..(self.cod + cod_size)]
+    }
+
+    pub fn opcodes(&self) {
+        let mut cod_reader = Cursor::new(self.cod_slice());
+        let mut opcodes: Vec<Opcode> = Vec::new();
+
+        // FIXME: Error handling
+        // Skip first two opcodes for some reason
+        cod_reader.read_u32::<LittleEndian>().unwrap();
+        cod_reader.read_u32::<LittleEndian>().unwrap();
+        loop {
+            match Opcode::read_from(&mut cod_reader) {
+                Some(o) => opcodes.push(o),
+                None => break,
+            }
+        }
     }
 }
 
@@ -169,5 +193,12 @@ mod tests {
             bin: amxmod_bin.to_vec(),
         };
         assert_eq!(extracted_plugin, expected_plugin);
+    }
+
+    #[test]
+    fn it_read_opcodes() {
+        let amxmod_bin = load_fixture("simple.amx183");
+        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        amxmod_plugin.opcodes();
     }
 }
