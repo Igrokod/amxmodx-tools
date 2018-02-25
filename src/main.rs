@@ -8,7 +8,10 @@ use rxxma::amxmodx::File as AmxmodxFile;
 
 // TODO: Custom panic handler
 macro_rules! die {
-    ($fmt:expr) => (print!(concat!($fmt, "\n")));
+    ($fmt:expr) => ({
+        eprintln!($fmt);
+        std::process::exit(-1);
+    });
     ($fmt:expr, $($arg:tt)*) => ({
         eprintln!($fmt, $($arg)*);
         std::process::exit(-1);
@@ -46,8 +49,22 @@ fn main() {
         Err(e) => die!("File parsing error: {}", e),
     };
 
-    println!(
-        "AmXModX file sections: {:?}",
-        amxmodx_file.sections().unwrap()
-    );
+    let sections = match amxmodx_file.sections() {
+        Ok(s) => s,
+        Err(e) => die!("Sections read error: {}", e),
+    };
+
+    println!("AmXModX file sections: {:?}", sections);
+
+    let section_32bit = match sections.into_iter().find(|ref s| s.cellsize == 4) {
+        Some(s) => s,
+        None => die!("File has no 32 bit sections. 64 bit are not supported"),
+    };
+
+    let amxmod_plugin = match section_32bit.unpack_section(&file_contents) {
+        Ok(p) => p,
+        Err(e) => die!("Amxmod unpack/parse error: {}", e),
+    };
+
+    println!("{:?}", amxmod_plugin);
 }

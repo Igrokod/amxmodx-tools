@@ -66,7 +66,7 @@ impl Section {
 
         match ZlibDecoder::new(gzip_slice).read_to_end(&mut amx_bin) {
             Ok(_) => (),
-            Err(_) => return Err("amx gz unpack error")
+            Err(_) => return Err("amx gz unpack error"),
         };
 
         let plugin = Plugin::from(&amx_bin);
