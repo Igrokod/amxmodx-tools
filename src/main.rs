@@ -69,6 +69,10 @@ fn main() {
     let opcodes = amxmod_plugin.opcodes().unwrap();
 
     for op in &opcodes {
-        println!("0x{:X}\t\t\t{:?}", op.address, op.code);
+        if let Some(ref p) = op.param {
+            println!("0x{:X}\t\t\t{:?}\t0x{:X}", op.address, op.code, p);
+        } else {
+            println!("0x{:X}\t\t\t{:?}", op.address, op.code);
+        }
     }
 }

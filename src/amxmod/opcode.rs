@@ -146,10 +146,90 @@ pub enum OpcodeType {
     OP_BREAK // End of AMXX op codes
 }}
 
+use self::OpcodeType::*;
+
+const SINGLE_PARAM_OPCODES: [u32; 74] = [
+    OP_LOAD_PRI as u32,
+    OP_LOAD_ALT as u32,
+    OP_LOAD_S_PRI as u32,
+    OP_LOAD_S_ALT as u32,
+    OP_LREF_PRI as u32,
+    OP_LREF_ALT as u32,
+    OP_LREF_S_PRI as u32,
+    OP_LREF_S_ALT as u32,
+    OP_LODB_I as u32,
+    OP_CONST_PRI as u32,
+    OP_CONST_ALT as u32,
+    OP_ADDR_PRI as u32,
+    OP_ADDR_ALT as u32,
+    OP_STOR_PRI as u32,
+    OP_STOR_ALT as u32,
+    OP_STOR_S_PRI as u32,
+    OP_STOR_S_ALT as u32,
+    OP_SREF_PRI as u32,
+    OP_SREF_ALT as u32,
+    OP_SREF_S_PRI as u32,
+    OP_SREF_S_ALT as u32,
+    OP_STRB_I as u32,
+    OP_LIDX_B as u32,
+    OP_IDXADDR_B as u32,
+    OP_ALIGN_PRI as u32,
+    OP_ALIGN_ALT as u32,
+    OP_LCTRL as u32,
+    OP_SCTRL as u32,
+    OP_PUSH_R as u32,
+    OP_PUSH_C as u32,
+    OP_PUSH as u32,
+    OP_PUSH_S as u32,
+    OP_STACK as u32,
+    OP_HEAP as u32,
+    OP_CALL as u32,
+    OP_JUMP as u32,
+    OP_JREL as u32,
+    OP_JZER as u32,
+    OP_JNZ as u32,
+    OP_JEQ as u32,
+    OP_JNEQ as u32,
+    OP_JLESS as u32,
+    OP_JLEQ as u32,
+    OP_JGRTR as u32,
+    OP_JGEQ as u32,
+    OP_JSLESS as u32,
+    OP_JSLEQ as u32,
+    OP_JSGRTR as u32,
+    OP_JSGEQ as u32,
+    OP_SHL as u32,
+    OP_SHR as u32,
+    OP_SSHR as u32,
+    OP_SHL_C_PRI as u32,
+    OP_SHL_C_ALT as u32,
+    OP_SHR_C_PRI as u32,
+    OP_SHR_C_ALT as u32,
+    OP_ADD_C as u32,
+    OP_SMUL_C as u32,
+    OP_ZERO as u32,
+    OP_ZERO_S as u32,
+    OP_EQ_C_PRI as u32,
+    OP_EQ_C_ALT as u32,
+    OP_INC as u32,
+    OP_INC_S as u32,
+    OP_DEC as u32,
+    OP_DEC_S as u32,
+    OP_MOVS as u32,
+    OP_CMPS as u32,
+    OP_FILL as u32,
+    OP_HALT as u32,
+    OP_BOUNDS as u32,
+    OP_SYSREQ_C as u32,
+    OP_SWITCH as u32,
+    OP_PUSHADDR as u32,
+];
+
 #[derive(Debug, PartialEq)]
 pub struct Opcode {
     pub code: OpcodeType,
     pub address: usize,
+    pub param: Option<u32>,
 }
 
 impl Opcode {
@@ -166,10 +246,20 @@ impl Opcode {
             None => return Err("invalid opcode found"),
         };
 
+        let mut param = if SINGLE_PARAM_OPCODES.contains(&code) {
+            match cod_reader.read_u32::<LittleEndian>() {
+                Ok(p) => Some(p),
+                Err(_) => return Err("opcode declared to have param but it's .COD EOF instead"),
+            }
+        } else {
+            None
+        };
+
         // FIXME: Check for invalid opcode
         Ok(Some(Opcode {
             code: enum_code,
             address: address as usize,
+            param: param,
         }))
     }
 }
