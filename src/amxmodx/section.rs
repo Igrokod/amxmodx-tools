@@ -30,26 +30,31 @@ impl Section {
             }
             Err(_) => return Err("EOF on section cellsize"),
         };
+        trace!("cellsize:\t{}", cellsize);
 
         let disksize = match reader.read_u32::<LittleEndian>() {
             Ok(ds) => ds,
             Err(_) => return Err("EOF on section disksize"),
         };
+        trace!("disksize:\t{}", disksize);
 
         let imagesize = match reader.read_u32::<LittleEndian>() {
             Ok(is) => is,
             Err(_) => return Err("EOF on section imagesize"),
         };
+        trace!("imagesize:\t{}", imagesize);
 
         let memsize = match reader.read_u32::<LittleEndian>() {
             Ok(ms) => ms,
             Err(_) => return Err("EOF on section memsize"),
         };
+        trace!("memsize:\t{}", memsize);
 
         let offset = match reader.read_u32::<LittleEndian>() {
             Ok(offs) => offs,
             Err(_) => return Err("EOF on section amx gz offset"),
         };
+        trace!("offset:\t{}", offset);
 
         Ok(Section {
             cellsize: cellsize,
@@ -68,6 +73,10 @@ impl Section {
             Ok(_) => (),
             Err(_) => return Err("amx gz unpack error"),
         };
+
+        if amx_bin.len() != self.imagesize as usize {
+            return Err("amx bin size does not match section imagesize");
+        }
 
         let plugin = Plugin::from(&amx_bin);
         plugin

@@ -17,24 +17,28 @@ impl<'a> File<'a> {
         let mut reader = Cursor::new(bin);
 
         // magic
-        match reader.read_u32::<LittleEndian>() {
-            Ok(magick) => {
-                if magick != File::MAGIC {
+        let magic = match reader.read_u32::<LittleEndian>() {
+            Ok(magic) => {
+                if magic != File::MAGIC {
                     return Err("Invalid file magic");
                 }
+                magic
             }
             Err(_) => return Err("Magic EOF"),
         };
+        trace!("File magic is 0x{:X}", magic);
 
         // version
-        match reader.read_u16::<LittleEndian>() {
+        let version = match reader.read_u16::<LittleEndian>() {
             Ok(version) => {
                 if version != File::COMPATIBLE_VERSION {
                     return Err("Incompatible file version");
                 }
+                version
             }
             Err(_) => return Err("Version EOF"),
         };
+        trace!("Version is 0x{:X}", version);
 
         // sections count
         let sections = match reader.read_u8() {
@@ -51,6 +55,7 @@ impl<'a> File<'a> {
             }
             Err(_) => return Err("Sections EOF"),
         };
+        trace!("File has {} sections", sections);
 
         Ok(File {
             bin: bin,
@@ -59,9 +64,11 @@ impl<'a> File<'a> {
     }
 
     pub fn sections(&self) -> Result<Vec<Section>, &'a str> {
-        let mut sections: Vec<Section> = Vec::new();
+        let mut sections: Vec<Section> = vec![];
 
         for i in 0..self.sections {
+            trace!("---------------");
+            trace!("Reading section {}", i + 1);
             let section_offset = File::AMXX_HEADER_SIZE + (Section::SIZE * i as usize);
             let section_bin = &self.bin[section_offset..];
             let section = match Section::from(section_bin) {

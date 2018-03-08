@@ -1,12 +1,14 @@
-extern crate rxxma;
 extern crate clap;
+#[macro_use]
+extern crate log;
+extern crate env_logger;
+extern crate rxxma;
 
 use std::io::prelude::*;
 use std::fs::File;
 use clap::{Arg, App};
 use rxxma::amxmodx::File as AmxmodxFile;
 
-// TODO: Custom panic handler
 macro_rules! die {
     ($fmt:expr) => ({
         eprintln!($fmt);
@@ -19,6 +21,8 @@ macro_rules! die {
 }
 
 fn main() {
+    env_logger::init();
+
     let matches = App::new("rxxma")
         .version("0.0.1")
         .about("Amxmodx plugin reverse utility")
@@ -54,13 +58,14 @@ fn main() {
         Err(e) => die!("Sections read error: {}", e),
     };
 
-    // println!("AmXModX file sections: {:?}", sections);
-
     let section_32bit = match sections.into_iter().find(|ref s| s.cellsize == 4) {
         Some(s) => s,
         None => die!("File has no 32 bit sections. 64 bit are not supported"),
     };
 
+    trace!("-----------------------------------------");
+    trace!("Reading amxmod plugin from 32 bit section");
+    trace!("-----------------------------------------");
     let amxmod_plugin = match section_32bit.unpack_section(&file_contents) {
         Ok(p) => p,
         Err(e) => die!("Amxmod unpack/parse error: {}", e),

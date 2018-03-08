@@ -5,6 +5,7 @@ use enum_primitive::FromPrimitive;
 
 enum_from_primitive! {
 #[derive(Debug, PartialEq)]
+#[allow(non_snake_case)]
 pub enum OpcodeType {
     OP_NONE, // invalid opcode
     OP_LOAD_PRI,
@@ -234,8 +235,12 @@ pub struct Opcode {
 
 impl Opcode {
     pub fn read_from<T: Read + Seek>(cod_reader: &mut T) -> Result<Option<Opcode>, &'static str> {
-        // TODO: Error handling?
-        let address = cod_reader.seek(SeekFrom::Current(0)).unwrap();
+        let address = match cod_reader.seek(SeekFrom::Current(0)) {
+            Ok(c) => c,
+            Err(_) => return Err("wtf: cannot seek on reader"),
+        };
+
+        // FIXME: Check for invalid opcode
         let code = match cod_reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
             Err(e) => return Ok(None), // Return no opcode, end of cod section
@@ -244,9 +249,11 @@ impl Opcode {
         let enum_code = match OpcodeType::from_u32(code) {
             Some(c) => c,
             None => return Err("invalid opcode found"),
+            // None => OpcodeType::OP_NONE,
         };
 
-        let mut param = if SINGLE_PARAM_OPCODES.contains(&code) {
+        // TODO: Test param
+        let param = if SINGLE_PARAM_OPCODES.contains(&code) {
             match cod_reader.read_u32::<LittleEndian>() {
                 Ok(p) => Some(p),
                 Err(_) => return Err("opcode declared to have param but it's .COD EOF instead"),
@@ -255,7 +262,6 @@ impl Opcode {
             None
         };
 
-        // FIXME: Check for invalid opcode
         Ok(Some(Opcode {
             code: enum_code,
             address: address as usize,
