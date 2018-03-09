@@ -279,7 +279,7 @@ impl Opcode {
             param: param,
         };
 
-        if opcode.code == OP_SHL {
+        if opcode.code == OP_SHL || opcode.code == OP_SSHR {
             // FIXME: Check compiler for
             // CONST.pri  0x1
             // LOAD.alt  0x2528C     ; weaponid
