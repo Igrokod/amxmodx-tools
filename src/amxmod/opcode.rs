@@ -1,5 +1,6 @@
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
+use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use enum_primitive::FromPrimitive;
 
@@ -144,7 +145,11 @@ pub enum OpcodeType {
     OP_NOP,
     OP_SYSREQ_D,
     OP_SYMTAG,  // obsolete
-    OP_BREAK // End of AMXX op codes
+    OP_BREAK, // End of AMXX op codes
+    // List of rxxma pseudo opcodes, careful!
+    OP_CASENONE,
+    OP_CASE,
+    OP_CASEJMP
 }}
 
 use self::OpcodeType::*;
@@ -234,27 +239,33 @@ pub struct Opcode {
 }
 
 impl Opcode {
-    pub fn read_from<T: Read + Seek>(cod_reader: &mut T) -> Result<Option<Opcode>, &'static str> {
-        let address = match cod_reader.seek(SeekFrom::Current(0)) {
-            Ok(c) => c,
-            Err(_) => return Err("wtf: cannot seek on reader"),
-        };
+    pub fn read_from<T: Read + Seek>(
+        cod_reader: &mut T,
+    ) -> Result<Option<Vec<Opcode>>, &'static str> {
+        // In case we return multiple
+        let mut opcodes: Vec<Opcode> = vec![];
+
+        let address = Opcode::read_addr(cod_reader)?;
 
         // FIXME: Check for invalid opcode
         let code = match cod_reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
             Err(e) => return Ok(None), // Return no opcode, end of cod section
         };
+        // for debugging purposes
+        trace!("Opcode: {}", code);
 
         let enum_code = match OpcodeType::from_u32(code) {
             Some(c) => c,
             None => return Err("invalid opcode found"),
-            // None => OpcodeType::OP_NONE,
         };
+        // for debugging purposes
+        trace!("As enum: {:?}", enum_code);
 
         // TODO: Test param
         let param = if SINGLE_PARAM_OPCODES.contains(&code) {
-            match cod_reader.read_u32::<LittleEndian>() {
+            trace!("Reading param");
+            match Opcode::read_param(cod_reader) {
                 Ok(p) => Some(p),
                 Err(_) => return Err("opcode declared to have param but it's .COD EOF instead"),
             }
@@ -262,11 +273,94 @@ impl Opcode {
             None
         };
 
-        Ok(Some(Opcode {
+        let opcode = Opcode {
             code: enum_code,
             address: address as usize,
             param: param,
-        }))
+        };
+
+        let is_casetbl = opcode.code == OP_CASETBL;
+        opcodes.push(opcode);
+
+        if is_casetbl {
+            match Opcode::read_case_table(cod_reader) {
+                Ok(v) => opcodes.extend(v),
+                Err(e) => return Err(e),
+            };
+        };
+
+        Ok(Some(opcodes))
+    }
+
+    fn read_case_table<T: Read + Seek>(cod_reader: &mut T) -> Result<Vec<Opcode>, &'static str> {
+        trace!("Process case table");
+        let mut opcodes: Vec<Opcode> = vec![];
+
+        let number_of_jumps = match Opcode::read_param(cod_reader) {
+            Ok(p) => p,
+            Err(_) => return Err("casetbl number of jumps unexpected EOF"),
+        };
+        trace!("Case table number of jumps: {}", number_of_jumps);
+
+        let address = Opcode::read_addr(cod_reader)?;
+        let none_found_param = match Opcode::read_param(cod_reader) {
+            Ok(p) => p,
+            Err(_) => return Err("casetbl 'none found' param: unexpected EOF"),
+        };
+
+        // for debugging purposes
+        trace!("CASENONE case, param: {0}/0x{0:X}", none_found_param);
+
+        let none_found_opcode = Opcode {
+            code: OP_CASENONE,
+            address: address,
+            param: Some(none_found_param),
+        };
+        opcodes.push(none_found_opcode);
+
+        for i in 0..number_of_jumps {
+            trace!("Process casetbl case #{}", i);
+            let address = Opcode::read_addr(cod_reader)?;
+            let case_param = match Opcode::read_param(cod_reader) {
+                Ok(p) => p,
+                Err(_) => return Err("casetbl 'case' param: unexpected EOF"),
+            };
+            trace!("CASE {}", case_param);
+            let case_op = Opcode {
+                code: OP_CASE,
+                address: address,
+                param: Some(case_param),
+            };
+            opcodes.push(case_op);
+
+            let address = Opcode::read_addr(cod_reader)?;
+            let case_jmp_param = match Opcode::read_param(cod_reader) {
+                Ok(p) => p,
+                Err(_) => return Err("casetbl 'case' param: unexpected EOF"),
+            };
+            trace!("CASEJMP {}", case_jmp_param);
+            let case_jmp = Opcode {
+                code: OP_CASENONE,
+                address: address,
+                param: Some(case_param),
+            };
+            opcodes.push(case_jmp);
+        }
+
+        Ok(opcodes)
+    }
+
+    fn read_param<T: Read + Seek>(cod_reader: &mut T) -> Result<u32, io::Error> {
+        cod_reader.read_u32::<LittleEndian>()
+    }
+
+    fn read_addr<T: Read + Seek>(cod_reader: &mut T) -> Result<usize, &'static str> {
+        let address = match cod_reader.seek(SeekFrom::Current(0)) {
+            Ok(c) => c,
+            Err(_) => return Err("wtf: cannot seek on reader"),
+        };
+
+        Ok(address as usize)
     }
 }
 
@@ -279,8 +373,8 @@ mod tests {
     #[test]
     fn it_read_opcode() {
         let mut cursor = Cursor::new([0, 0, 0, 0]);
-        let opcode = Opcode::read_from(&mut cursor).unwrap().unwrap();
-        assert_eq!(opcode.code, OP_NONE);
+        let opcodes = Opcode::read_from(&mut cursor).unwrap().unwrap();
+        assert_eq!(opcodes[0].code, OP_NONE);
     }
 
     #[test]

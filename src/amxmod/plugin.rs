@@ -192,7 +192,7 @@ impl Plugin {
         loop {
             match Opcode::read_from(&mut cod_reader) {
                 // FIXME: Test all cases
-                Ok(Some(o)) => opcodes.push(o),
+                Ok(Some(o)) => opcodes.extend(o),
                 Ok(None) => break,
                 Err(e) => return Err(e),
             }
