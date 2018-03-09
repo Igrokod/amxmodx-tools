@@ -253,7 +253,7 @@ impl Opcode {
             Err(e) => return Ok(None), // Return no opcode, end of cod section
         };
         // for debugging purposes
-        trace!("Opcode: {}", code);
+        trace!("0x{:X}\tOpcode: {}", address, code);
 
         let enum_code = match OpcodeType::from_u32(code) {
             Some(c) => c,
@@ -278,6 +278,18 @@ impl Opcode {
             address: address as usize,
             param: param,
         };
+
+        if opcode.code == OP_SHL {
+            // FIXME: Check compiler for
+            // CONST.pri  0x1
+            // LOAD.alt  0x2528C     ; weaponid
+            // SHL  0xC
+            // UNKNOWN OP CODE: 0x4030C02
+            match Opcode::read_param(cod_reader) {
+                Ok(p) => p,
+                Err(_) => return Err("EOF on SHL Hack"),
+            };
+        }
 
         let is_casetbl = opcode.code == OP_CASETBL;
         opcodes.push(opcode);
