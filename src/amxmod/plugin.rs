@@ -1,7 +1,11 @@
 use std::io::Cursor;
+use std::io::prelude::*;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
+use super::super::util::ReadByteString;
+
 use super::Opcode;
+use super::Native;
 
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
@@ -200,13 +204,27 @@ impl Plugin {
 
         Ok(opcodes)
     }
+
+    pub fn natives(&self) -> Vec<Native> {
+        let slice = &self.bin[self.natives..self.libraries];
+        slice.chunks(8) // Take natives by native struct
+           .map(|x| &x[4..8] ) // Extrace name_offset from struct
+           // TODO: Error handling?
+           // Convert name offset to number
+           .map(|mut x| x.read_u32::<LittleEndian>().unwrap() as usize )
+           .map(|x| (x, self.bin[x..].read_string_zero().unwrap()) )
+           .map(|(offset, name)| Native {name: name, address: offset})
+           .collect()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use std::io::prelude::*;
     use std::fs::File;
+    use std::ffi::CString;
     use super::Plugin;
+    use super::Native;
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();
@@ -246,5 +264,24 @@ mod tests {
         let amxmod_bin = load_fixture("simple.amx183");
         let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
         amxmod_plugin.opcodes();
+    }
+
+    #[test]
+    fn it_read_natives() {
+        let amxmod_bin = load_fixture("two_natives.amx183");
+        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let natives = amxmod_plugin.natives();
+        let expected_natives = [
+            Native {
+                name: CString::new("native_one").unwrap(),
+                address: 87,
+            },
+            Native {
+                name: CString::new("native_two").unwrap(),
+                address: 98,
+            },
+        ];
+
+        assert_eq!(natives, expected_natives);
     }
 }
