@@ -1,12 +1,21 @@
-pub struct Function {
+use super::super::amxmod::Opcode;
+
+pub struct Function<'a> {
     pub name: String,
+    pub opcodes: Vec<&'a Opcode>,
 }
 
-impl Function {
+impl<'a> Function<'a> {
     pub fn to_string(&self) -> String {
-        String::from(format!(
-            "public {fname}() {{\n\t// No code yet\n}}",
-            fname = self.name
-        ))
+        let mut source = String::new();
+
+        source.push_str(&format!("public {fname} () {{\n", fname = self.name));
+
+        for opcode in self.opcodes.iter() {
+            // source.push_str(&format!("\t#emit {}\n", opcode));
+        }
+
+        source.push_str("}");
+        source
     }
 }

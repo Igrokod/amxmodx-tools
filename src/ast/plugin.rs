@@ -3,25 +3,39 @@ use super::super::amxmod::OpcodeType::*;
 
 use super::Function;
 
-pub struct Plugin {
-    functions: Vec<Function>,
+pub struct Plugin<'a> {
+    functions: Vec<Function<'a>>,
 }
 
-impl Plugin {
-    pub fn from_opcodes(bin: &[u8], opcodes: &[Opcode]) -> Result<Plugin, &'static str> {
+impl<'a> Plugin<'a> {
+    pub fn from_opcodes(_bin: &[u8], opcodes: &'a [Opcode]) -> Result<Plugin<'a>, &'static str> {
         let mut function_counter = 0;
         let mut functions: Vec<Function> = vec![];
+        let mut stack: Vec<&Opcode> = vec![];
 
         for opcode in opcodes.iter() {
             if opcode.code == OP_PROC {
                 let function_name = Plugin::name_for_function(function_counter);
-                let function = Function { name: function_name };
+                let function = Function {
+                    name: function_name,
+                    opcodes: vec![],
+                };
                 functions.push(function);
                 function_counter += 1;
+                continue;
             }
+
+            if opcode.code == OP_BREAK || opcode.code == OP_RETN {
+                let last_function = functions.last_mut().unwrap();
+                // FIXME: Handle when no functions were given yet
+                last_function.opcodes.extend(&stack);
+                stack.clear();
+            }
+
+            stack.push(&opcode);
         }
 
-        let mut plugin = Plugin { functions: functions };
+        let plugin = Plugin { functions: functions };
         Ok(plugin)
     }
 
