@@ -30,6 +30,7 @@ impl<'a> Plugin<'a> {
                 // FIXME: Handle when no functions were given yet
                 last_function.opcodes.extend(&stack);
                 stack.clear();
+                continue;
             }
 
             stack.push(&opcode);
