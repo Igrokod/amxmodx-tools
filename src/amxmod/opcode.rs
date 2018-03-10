@@ -24,7 +24,7 @@ impl Opcode {
         // FIXME: Check for invalid opcode
         let code = match cod_reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
-            Err(e) => return Ok(None), // Return no opcode, end of cod section
+            Err(_) => return Ok(None), // Return no opcode, end of cod section
         };
         // for debugging purposes
         trace!("0x{:X}\tOpcode: {}", address, code);

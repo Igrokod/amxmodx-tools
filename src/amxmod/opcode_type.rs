@@ -3,6 +3,7 @@ use std::fmt;
 enum_from_primitive! {
 #[derive(Copy, Clone, Debug, PartialEq)]
 #[allow(non_snake_case)]
+#[allow(non_snake_case)]
 pub enum OpcodeType {
     OP_NONE, // invalid opcode
     OP_LOAD_PRI,

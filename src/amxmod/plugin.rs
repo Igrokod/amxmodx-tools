@@ -60,7 +60,7 @@ impl Plugin {
         };
 
         // TODO: Test incorrect
-        let amx_version = match reader.read_u8() {
+        match reader.read_u8() {
             Ok(v) => {
                 trace!("amx version:\t{}", v);
                 if v != Plugin::AMX_VERSION {
