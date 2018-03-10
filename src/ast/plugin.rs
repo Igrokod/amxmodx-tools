@@ -1,19 +1,22 @@
+use super::super::amxmod::Plugin as AmxPlugin;
 use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
 
 use super::Function;
 
-pub struct Plugin<'a> {
-    functions: Vec<Function<'a>>,
+pub struct Plugin {
+    functions: Vec<Function>,
 }
 
-impl<'a> Plugin<'a> {
-    pub fn from_opcodes(_bin: &[u8], opcodes: &'a [Opcode]) -> Result<Plugin<'a>, &'static str> {
+impl Plugin {
+    pub fn from_amxmod_plugin(amxplugin: &AmxPlugin) -> Result<Plugin, &'static str> {
         let mut function_counter = 0;
         let mut functions: Vec<Function> = vec![];
-        let mut stack: Vec<&Opcode> = vec![];
+        let mut stack: Vec<Opcode> = vec![];
+        // FIXME: Error handling
+        let opcodes = amxplugin.opcodes().unwrap();
 
-        for opcode in opcodes.iter() {
+        for opcode in opcodes.into_iter() {
             if opcode.code == OP_PROC {
                 let function_name = Plugin::name_for_function(function_counter);
                 let function = Function {
@@ -33,7 +36,7 @@ impl<'a> Plugin<'a> {
                 continue;
             }
 
-            stack.push(&opcode);
+            stack.push(opcode);
         }
 
         let plugin = Plugin { functions: functions };

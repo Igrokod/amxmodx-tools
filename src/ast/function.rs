@@ -1,11 +1,11 @@
 use super::super::amxmod::Opcode;
 
-pub struct Function<'a> {
+pub struct Function {
     pub name: String,
-    pub opcodes: Vec<&'a Opcode>,
+    pub opcodes: Vec<Opcode>,
 }
 
-impl<'a> Function<'a> {
+impl Function {
     pub fn to_string(&self) -> String {
         let mut source = String::new();
 

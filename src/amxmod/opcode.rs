@@ -5,7 +5,7 @@ use std::io::{Read, Seek, SeekFrom};
 use super::opcode_type::*;
 use enum_primitive::FromPrimitive;
 
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Opcode {
     pub code: OpcodeType,
     pub address: usize,

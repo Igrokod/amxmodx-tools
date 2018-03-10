@@ -83,7 +83,7 @@ fn main() {
     }
 
     println!("\n\n");
-    let ast_plugin = match AstPlugin::from_opcodes(&amxmod_plugin.bin, &opcodes) {
+    let ast_plugin = match AstPlugin::from_amxmod_plugin(&amxmod_plugin) {
         Ok(p) => p,
         Err(e) => die!("Cannot convert plugin opcodes to AST tree: {}", e),
     };
