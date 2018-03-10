@@ -21,7 +21,7 @@ impl Function {
             source.push('\n');
         }
 
-        source.push_str("}");
+        source.push_str("}\n\n");
         source
     }
 }

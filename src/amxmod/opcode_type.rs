@@ -145,8 +145,7 @@ pub enum OpcodeType {
     // List of rxxma pseudo opcodes, careful!
     OP_CASENONE,
     OP_CASE,
-    OP_CASEJMP,
-    OP_FAKE // Used only in tests, never used in real code
+    OP_CASEJMP
 }}
 
 pub use self::OpcodeType::*;
@@ -228,156 +227,157 @@ pub const SINGLE_PARAM_OPCODES: [u32; 74] = [
     OP_PUSHADDR as u32,
 ];
 
-const OPCODE_FMT_NAMES: [&str; 138] = [
-	"INVALID",		    // invalid opcode
-	"LOAD.pri",		    // Load address into PRI.
-	"LOAD.alt",		    // Load address into ALT.
-	"LOAD.S.pri",		// Load stack offset into PRI.
-	"LOAD.S.alt",		// Load stack offset into ALT.
-	"LREF.pri",		    // Load address ref into PRI.
-	"LREF.alt",		    // Load address ref into ALT.
-	"LREF.S.pri",		// Load stack offset ref into PRI.
-	"LREF.S.alt",		// Load stack offset ref into ALT.
-	"LOAD.I",		    // PRI = [PRI]
-	"LOBD.I",		    // PRI = [PRI + Param bytes]
-	"CONST.pri",		// PRI = value TODO: Better const reading
-	"CONST.alt",		// ALT = value
-	"ADDR.pri",		    // PRI = FRM + offs
-	"ADDR.alt",		    // ALT = FRM + offs
-	"STOR.pri",		    // [ Param ] = PRI
-	"STOR.alt",		    // [ Param ] = ALT
-	"STOR.S.pri",		// [ Stack + Param ] = PRI
-	"STOR.S.alt",		// [ Stack + Param ] = ALT
-	"SREF.pri",		    // [ [ Param ] ] = PRI
-	"SREF.alt",		    // [ [ Param ] ] = ALT
-	"SREF.S.pri",		// [ [ Stack + Param ] ] = PRI
-	"SREF.S.alt",		// [ [ Stack + Param ] ] = ALT
-	"STOR.I",		    // [ ALT ] = PRI
-	"STRB.I",		    // [ ALT ] = PRI (Param = number of bytes written)
-	"LIDX",		        // PRI = [ ALT + (PRI * sizeof(cell)) ]
-	"LIDX.B",		    // PRI = [ ALT + (PRI << param)]
-	"IDXADDR",		    // PRI = ALT + (PRI * sizeof(cell))
-	"IDXADDR.B",		// PRI = ALT + (PRI << param)
-	"ALIGN.pri",		// PRI ^= cellsize - param
-	"ALIGN.pri",		// ALT ^= cellsize - param
-	"LCTRL",		    // PRI is set to special register value.
-	"SCTRL",		    // the special register is set to PRI
-	"MOVE.pri",		    // PRI = ALT
-	"MOVE.alt",		    // ALT = PRI
-	"XCHG",		        // Exchange alt and pri
-	"PUSH.pri",		    // [STK] = PRI; STK -= sizeof(cell)
-	"PUSH.alt",		    // [STK] = ALT; STK -= sizeof(cell)
-	"PUSH.R",		    // obsolete
-	"PUSH.C",		    // TODO: Better handling. [STK] = param; STK -= sizeof(cell)
-	"PUSH",		        // [STK] = [PARAM]; STK -= sizeof(cell)
-	"PUSH.S",		    // [STK] = [FRM + param]; STK -= sizeof(cell)
-	"POP.pri",		    // STK += sizeof(cell) ; PRI = [STK]
-	"POP.alt",		    // STK += sizeof(cell) ; ALT = [STK]
-	"STACK",		    // ALT = STK; STK += param
-	"HEAP",		        // ALT = HEA; HEA += param
-	"PROC",		        // [STK] = FRM; STK -= sizeof(cell); FRM = [STK]
-	"RET",		        // STK += cellsize; FRM = [STK]; STK += cellsize; CIP = [STK]
-	"RETN",		        // STK += cellsize; FRM = [STK]; STK += cellsize; CIP = [STK]; STK += [STK]
-	"CALL",		        // [STK] = CIP + 5; STK = STK - cellsize; CIP = param
-	"CALL.pri",		    // [STK] = CIP + 1; STK -= cellsize; CIP = pri
-	"JUMP",		        // CIP = param
-	"JREL",		        // CIP += param
-	"JZER",		        // if (PRI==0) CIP = [CIP + 1]
-	"JNZ",		        // if (PRI!=0) CIP = [ CIP + 1 ]
-	"JEQ",		        // if PRI==ALT CIP = [ CIP + 1 ]
-	"JNEQ",		        // if PRI!=ALT CIP = [ CIP + 1 ]
-	"JLESS",		    // if PRI<ALT CIP = [ CIP + 1 ]
-	"JLEQ",		        // if PRI<=ALT CIP = [ CIP + 1 ]
-	"JGRTR",		    // if PRI>ALT CIP = [ CIP + 1 ]
-	"JGEQ",		        // if PRI>=ALT CIP = [ CIP + 1 ]
-	"JSLESS",		    // if (SIGNED) PRI<ALT CIP = [ CIP + 1 ]
-	"JSLEQ",		    // if SIGNED PRI<=ALT CIP = [ CIP + 1 ]
-	"JSGRTR",		    // if SIGNED PRI>ALT CIP = [ CIP + 1 ]
-	"JSGEQ",		    // if SIGNED PRI>=ALT CIP = [ CIP + 1 ]
-	"SHL",		        // PRI = PRI << ALT
-	"SHR",		        // PRI = PRI >> ALT
-	"SSHR",		        // PRI = PRI >> ALT SIGNED
-	"SHL.C.pri",		// PRI = PRI << param
-	"SHL.C.alt",		// ALT = ALT << param
-	"SHR.C.pri",		// PRI = PRI >> param
-	"SHR.C.alt",		// ALT = ALT >> param
-	"SMUL",		        // PRI *= ALT SIGNED
-	"SDIV",		        // PRI = PRI / ALT SIGNED (ALT = PRI mod ALT)
-	"SDIV.alt",		    // PRI = ALT / PRI SIGNED (ALT = PRI mod ALT)
-	"UMUL",		        // PRI *= ALT UNSIGNED
-	"UDIV",		        // PRI = PRI / ALT UNSIGNED (ALT = PRI mod ALT)
-	"UDIV.alt",		    // PRI = ALT / PRI UNSIGNED (ALT = PRI mod ALT)
-	"ADD",		        // PRI += ALT
-	"SUB",		        // PRI -= ALT
-	"SUB.alt",		    // PRI = ALT - PRI
-	"AND",		        // PRI &= ALT
-	"OR",		        // PRI |= ALT
-	"XOR",		        // PRI ^= ALT
-	"NOT",		        // PRI = !ALT
-	"NEG",		        // PRI = -PRI
-	"INVERT",		    // PRI = ~PRI
-	"ADD.C",		    // PRI += param
-	"SMUL.C",		    // PRI *= param
-	"ZERO.pri",		    // PRI=0
-	"ZERO.alt",		    // ALT=0
-	"ZERO",		        // [ param ] = 0
-	"ZERO.S",		    // [ FRM + param ] = 0
-	"SIGN.pri",		    // sign extent the byte in PRI or ALT to a cell
-	"SIGN.alt",		    // sign extent the byte in PRI or ALT to a cell
-	"EQ",		        // PRI = PRI == ALT ? 1 : 0
-	"NEQ",		        // PRI = PRI != ALT ? 1 : 0
-	"LESS",		        // PRI = PRI < ALT ? 1 : 0
-	"LEQ",		        // PRI = PRI <= ALT ? 1 : 0
-	"GRTR",		        // PRI = PRI > ALT ? 1 : 0
-	"GEQ",		        // PRI = PRI >= ALT ? 1 : 0
-	"SLESS",		    // PRI = PRI < ALT ? 1 : 0
-	"SLEQ",		        // PRI = PRI <= ALT ? 1 : 0
-	"SGRTR",		    // PRI = PRI > ALT ? 1 : 0
-	"SGEQ",		        // PRI = PRI >= ALT ? 1 : 0
-	"EQ.C.pri",		    // PRI = PRI == param ? 1 : 0
-	"EQ.C.alt",		    // PRI = ALT == param ? 1 : 0
-	"INC.pri",		    // PRI++
-	"INC.alt",		    // ALT++
-	"INC",		        // [ param ] ++
-	"INC.S",		    // [ FRM + param ] ++
-	"INC.I",		    // [PRI]++
-	"DEC.pri",		    // PRI--
-	"DEC.alt",		    // ALT--
-	"DEC",		        // [ param ] --
-	"DEC.S",		    // [ FRM + param ] --
-	"DEC.I",		    // [PRI]--
-	"MOVS",		        // [ALT] = [PRI] (param is # of bytes)
-	"CMPS",		        // compare [ALT] to [PRI] (param is # of bytes)
-	"FILL",		        // Fill memory at [ALT] with value at [PRI], param is # of bytes
-	"HALT",		        // Halt operation.
-	"BOUNDS",		    // Aborts if PRI > param or PRI < 0
-	"SYSREQ.pri",		// native, native id is in PRI
-	"SYSREQ.C",		    // native, id is param.
-	"OP_FILE",		    // obsolete | !WARNING! No fmt value for OP_FILE
-	"OP_LINE",		    // obsolete | !WARNING! No fmt value for OP_LINE
-	"OP_SYMBOL",		// obsolete | !WARNING! No fmt value for OP_SYMBOL
-	"OP_SRANGE",		// obsolete | !WARNING! No fmt value for OP_SRANGE
-	"JUMP.pri",		    // CIP = pri
-	"SWITCH",		    // Compare PRI to the value of the passed casetbl, jump accordingly.
-	"CASETBL",		    // TODO: Multiple params
-	"SWAP.pri",		    // [STK] = PRI; PRI = old [STK]
-	"SWAP.alt",		    // [STK] = ALT; ALT = old [STK]
-	"PUSH.ADR",		    // [STK] = FRM + param; STK-=sizeofcell;
-	"NOP",		        // No Operation
-	"SYSREQ.D",
-	"OP_SYMTAG",		// obsolete | !WARNING! No fmt value for OP_SYMTAG
-	"BREAK",		    // Breakpoint
+const OPCODE_FMT_NAMES: [&str; 141] = [
+    "INVALID", // invalid opcode
+    "LOAD.pri", // Load address into PRI.
+    "LOAD.alt", // Load address into ALT.
+    "LOAD.S.pri", // Load stack offset into PRI.
+    "LOAD.S.alt", // Load stack offset into ALT.
+    "LREF.pri", // Load address ref into PRI.
+    "LREF.alt", // Load address ref into ALT.
+    "LREF.S.pri", // Load stack offset ref into PRI.
+    "LREF.S.alt", // Load stack offset ref into ALT.
+    "LOAD.I", // PRI = [PRI]
+    "LOBD.I", // PRI = [PRI + Param bytes]
+    "CONST.pri", // PRI = value TODO: Better const reading
+    "CONST.alt", // ALT = value
+    "ADDR.pri", // PRI = FRM + offs
+    "ADDR.alt", // ALT = FRM + offs
+    "STOR.pri", // [ Param ] = PRI
+    "STOR.alt", // [ Param ] = ALT
+    "STOR.S.pri", // [ Stack + Param ] = PRI
+    "STOR.S.alt", // [ Stack + Param ] = ALT
+    "SREF.pri", // [ [ Param ] ] = PRI
+    "SREF.alt", // [ [ Param ] ] = ALT
+    "SREF.S.pri", // [ [ Stack + Param ] ] = PRI
+    "SREF.S.alt", // [ [ Stack + Param ] ] = ALT
+    "STOR.I", // [ ALT ] = PRI
+    "STRB.I", // [ ALT ] = PRI (Param = number of bytes written)
+    "LIDX", // PRI = [ ALT + (PRI * sizeof(cell)) ]
+    "LIDX.B", // PRI = [ ALT + (PRI << param)]
+    "IDXADDR", // PRI = ALT + (PRI * sizeof(cell))
+    "IDXADDR.B", // PRI = ALT + (PRI << param)
+    "ALIGN.pri", // PRI ^= cellsize - param
+    "ALIGN.pri", // ALT ^= cellsize - param
+    "LCTRL", // PRI is set to special register value.
+    "SCTRL", // the special register is set to PRI
+    "MOVE.pri", // PRI = ALT
+    "MOVE.alt", // ALT = PRI
+    "XCHG", // Exchange alt and pri
+    "PUSH.pri", // [STK] = PRI; STK -= sizeof(cell)
+    "PUSH.alt", // [STK] = ALT; STK -= sizeof(cell)
+    "PUSH.R", // obsolete
+    "PUSH.C", // TODO: Better handling. [STK] = param; STK -= sizeof(cell)
+    "PUSH", // [STK] = [PARAM]; STK -= sizeof(cell)
+    "PUSH.S", // [STK] = [FRM + param]; STK -= sizeof(cell)
+    "POP.pri", // STK += sizeof(cell) ; PRI = [STK]
+    "POP.alt", // STK += sizeof(cell) ; ALT = [STK]
+    "STACK", // ALT = STK; STK += param
+    "HEAP", // ALT = HEA; HEA += param
+    "PROC", // [STK] = FRM; STK -= sizeof(cell); FRM = [STK]
+    "RET", // STK += cellsize; FRM = [STK]; STK += cellsize; CIP = [STK]
+    "RETN", // STK += cellsize; FRM = [STK]; STK += cellsize; CIP = [STK]; STK += [STK]
+    "CALL", // [STK] = CIP + 5; STK = STK - cellsize; CIP = param
+    "CALL.pri", // [STK] = CIP + 1; STK -= cellsize; CIP = pri
+    "JUMP", // CIP = param
+    "JREL", // CIP += param
+    "JZER", // if (PRI==0) CIP = [CIP + 1]
+    "JNZ", // if (PRI!=0) CIP = [ CIP + 1 ]
+    "JEQ", // if PRI==ALT CIP = [ CIP + 1 ]
+    "JNEQ", // if PRI!=ALT CIP = [ CIP + 1 ]
+    "JLESS", // if PRI<ALT CIP = [ CIP + 1 ]
+    "JLEQ", // if PRI<=ALT CIP = [ CIP + 1 ]
+    "JGRTR", // if PRI>ALT CIP = [ CIP + 1 ]
+    "JGEQ", // if PRI>=ALT CIP = [ CIP + 1 ]
+    "JSLESS", // if (SIGNED) PRI<ALT CIP = [ CIP + 1 ]
+    "JSLEQ", // if SIGNED PRI<=ALT CIP = [ CIP + 1 ]
+    "JSGRTR", // if SIGNED PRI>ALT CIP = [ CIP + 1 ]
+    "JSGEQ", // if SIGNED PRI>=ALT CIP = [ CIP + 1 ]
+    "SHL", // PRI = PRI << ALT
+    "SHR", // PRI = PRI >> ALT
+    "SSHR", // PRI = PRI >> ALT SIGNED
+    "SHL.C.pri", // PRI = PRI << param
+    "SHL.C.alt", // ALT = ALT << param
+    "SHR.C.pri", // PRI = PRI >> param
+    "SHR.C.alt", // ALT = ALT >> param
+    "SMUL", // PRI *= ALT SIGNED
+    "SDIV", // PRI = PRI / ALT SIGNED (ALT = PRI mod ALT)
+    "SDIV.alt", // PRI = ALT / PRI SIGNED (ALT = PRI mod ALT)
+    "UMUL", // PRI *= ALT UNSIGNED
+    "UDIV", // PRI = PRI / ALT UNSIGNED (ALT = PRI mod ALT)
+    "UDIV.alt", // PRI = ALT / PRI UNSIGNED (ALT = PRI mod ALT)
+    "ADD", // PRI += ALT
+    "SUB", // PRI -= ALT
+    "SUB.alt", // PRI = ALT - PRI
+    "AND", // PRI &= ALT
+    "OR", // PRI |= ALT
+    "XOR", // PRI ^= ALT
+    "NOT", // PRI = !ALT
+    "NEG", // PRI = -PRI
+    "INVERT", // PRI = ~PRI
+    "ADD.C", // PRI += param
+    "SMUL.C", // PRI *= param
+    "ZERO.pri", // PRI=0
+    "ZERO.alt", // ALT=0
+    "ZERO", // [ param ] = 0
+    "ZERO.S", // [ FRM + param ] = 0
+    "SIGN.pri", // sign extent the byte in PRI or ALT to a cell
+    "SIGN.alt", // sign extent the byte in PRI or ALT to a cell
+    "EQ", // PRI = PRI == ALT ? 1 : 0
+    "NEQ", // PRI = PRI != ALT ? 1 : 0
+    "LESS", // PRI = PRI < ALT ? 1 : 0
+    "LEQ", // PRI = PRI <= ALT ? 1 : 0
+    "GRTR", // PRI = PRI > ALT ? 1 : 0
+    "GEQ", // PRI = PRI >= ALT ? 1 : 0
+    "SLESS", // PRI = PRI < ALT ? 1 : 0
+    "SLEQ", // PRI = PRI <= ALT ? 1 : 0
+    "SGRTR", // PRI = PRI > ALT ? 1 : 0
+    "SGEQ", // PRI = PRI >= ALT ? 1 : 0
+    "EQ.C.pri", // PRI = PRI == param ? 1 : 0
+    "EQ.C.alt", // PRI = ALT == param ? 1 : 0
+    "INC.pri", // PRI++
+    "INC.alt", // ALT++
+    "INC", // [ param ] ++
+    "INC.S", // [ FRM + param ] ++
+    "INC.I", // [PRI]++
+    "DEC.pri", // PRI--
+    "DEC.alt", // ALT--
+    "DEC", // [ param ] --
+    "DEC.S", // [ FRM + param ] --
+    "DEC.I", // [PRI]--
+    "MOVS", // [ALT] = [PRI] (param is # of bytes)
+    "CMPS", // compare [ALT] to [PRI] (param is # of bytes)
+    "FILL", // Fill memory at [ALT] with value at [PRI], param is # of bytes
+    "HALT", // Halt operation.
+    "BOUNDS", // Aborts if PRI > param or PRI < 0
+    "SYSREQ.pri", // native, native id is in PRI
+    "SYSREQ.C", // native, id is param.
+    "OP_FILE", // obsolete | !WARNING! No fmt value for OP_FILE
+    "OP_LINE", // obsolete | !WARNING! No fmt value for OP_LINE
+    "OP_SYMBOL", // obsolete | !WARNING! No fmt value for OP_SYMBOL
+    "OP_SRANGE", // obsolete | !WARNING! No fmt value for OP_SRANGE
+    "JUMP.pri", // CIP = pri
+    "SWITCH", // Compare PRI to the value of the passed casetbl, jump accordingly.
+    "CASETBL", // TODO: Multiple params
+    "SWAP.pri", // [STK] = PRI; PRI = old [STK]
+    "SWAP.alt", // [STK] = ALT; ALT = old [STK]
+    "PUSH.ADR", // [STK] = FRM + param; STK-=sizeofcell;
+    "NOP", // No Operation
+    "SYSREQ.D",
+    "OP_SYMTAG", // obsolete | !WARNING! No fmt value for OP_SYMTAG
+    "BREAK", // Breakpoint
     // End of AMXX op codes
+    // --------------------
+    // List of rxxma pseudo opcodes, careful!
+    "CASENONE",
+    "CASE",
+    "CASEJMP",
 ];
 
 impl fmt::Display for OpcodeType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let id = *self as usize;
-
-        if id > OPCODE_FMT_NAMES.len() {
-            panic!("OPCODE \"{}\" FMT IS OUT OF BOUNDS", self);
-        }
-
+        // TODO: Return original name when out of bounds
         let fmt_name = OPCODE_FMT_NAMES[id];
         write!(f, "{}", fmt_name)
     }
@@ -391,11 +391,4 @@ mod tests {
     fn has_fmt() {
         assert_eq!("LOAD.pri", format!("{}", OP_LOAD_PRI));
     }
-
-    // FIXME: Handle panic
-    // #[test]
-    // #[should_panic]
-    // fn fmt_panics_when_opcode_has_no_fmt_value() {
-    //     println!("{}", OP_FAKE);
-    // }
 }
