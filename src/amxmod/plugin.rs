@@ -18,7 +18,7 @@ pub struct Plugin {
     pubvars: usize,
     tags: usize,
     nametable: usize,
-    bin: Vec<u8>,
+    pub bin: Vec<u8>,
 }
 
 impl Plugin {

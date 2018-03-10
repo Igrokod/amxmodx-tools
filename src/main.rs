@@ -8,6 +8,7 @@ use std::io::prelude::*;
 use std::fs::File;
 use clap::{Arg, App};
 use rxxma::amxmodx::File as AmxmodxFile;
+use rxxma::ast::Plugin as AstPlugin;
 
 macro_rules! die {
     ($fmt:expr) => ({
@@ -73,11 +74,18 @@ fn main() {
 
     let opcodes = amxmod_plugin.opcodes().unwrap();
 
-    for op in &opcodes {
+    for op in opcodes.iter() {
         if let Some(ref p) = op.param {
             println!("0x{:X}\t\t\t{:?}\t0x{:X}", op.address, op.code, p);
         } else {
             println!("0x{:X}\t\t\t{:?}", op.address, op.code);
         }
     }
+
+    println!("\n\n");
+    let ast_plugin = match AstPlugin::from_opcodes(&amxmod_plugin.bin, &opcodes) {
+        Ok(p) => p,
+        Err(e) => die!("Cannot convert plugin opcodes to AST tree: {}", e),
+    };
+    println!("{}", ast_plugin.to_string());
 }
