@@ -76,9 +76,9 @@ fn main() {
 
     for op in opcodes.iter() {
         if let Some(ref p) = op.param {
-            println!("0x{:X}\t\t\t{:?}\t0x{:X}", op.address, op.code, p);
+            println!("0x{:X} {}  0x{:X}", op.address, op.code, p);
         } else {
-            println!("0x{:X}\t\t\t{:?}", op.address, op.code);
+            println!("0x{:X} {}", op.address, op.code);
         }
     }
 

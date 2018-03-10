@@ -12,7 +12,13 @@ impl<'a> Function<'a> {
         source.push_str(&format!("public {fname} () {{\n", fname = self.name));
 
         for opcode in self.opcodes.iter() {
-            // source.push_str(&format!("\t#emit {}\n", opcode));
+            source.push_str(&format!("\t#emit {}", opcode.code));
+
+            if let Some(p) = opcode.param {
+                source.push_str(&format!("\t0x{:X}", p));
+            }
+
+            source.push('\n');
         }
 
         source.push_str("}");
