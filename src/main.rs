@@ -82,6 +82,18 @@ fn main() {
         }
     }
 
+    let natives = amxmod_plugin.natives();
+    println!("\n\nNatives list:");
+    for native in natives {
+        println!("{}", native.name.to_str().unwrap());
+    }
+
+    let publics = amxmod_plugin.publics();
+    println!("\n\nPublics list:");
+    for public in publics {
+        println!("{}", public.name.to_str().unwrap());
+    }
+
     println!("\n\n");
     let ast_plugin = match AstPlugin::from_amxmod_plugin(&amxmod_plugin) {
         Ok(p) => p,

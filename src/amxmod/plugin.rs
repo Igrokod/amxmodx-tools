@@ -305,7 +305,10 @@ mod tests {
         let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
         let publics = amxmod_plugin.publics();
         let expected_publics = [
-            Public { name: CString::new("func").unwrap(), address: 82 }
+            Public {
+                name: CString::new("func").unwrap(),
+                address: 82,
+            },
         ];
 
         assert_eq!(publics, expected_publics);
