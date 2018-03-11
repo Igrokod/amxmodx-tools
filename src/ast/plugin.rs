@@ -2,29 +2,26 @@ use super::super::amxmod::Plugin as AmxPlugin;
 use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
 
-use super::Function;
+use super::Function as AstFunction;
 
 pub struct Plugin {
-    functions: Vec<Function>,
+    functions: Vec<AstFunction>,
 }
 
 impl Plugin {
-    pub fn from_amxmod_plugin(amxplugin: &AmxPlugin) -> Result<Plugin, &'static str> {
-        let mut function_counter = 0;
-        let mut functions: Vec<Function> = vec![];
+    pub fn from_amxmod_plugin(amx_plugin: &AmxPlugin) -> Result<Plugin, &'static str> {
+        let public_list = amx_plugin.publics();
+        // let native_list = amx_plugin.natives();
+
+        let mut functions: Vec<AstFunction> = vec![];
         let mut stack: Vec<Opcode> = vec![];
         // FIXME: Error handling
-        let opcodes = amxplugin.opcodes().unwrap();
+        let opcodes = amx_plugin.opcodes().unwrap();
 
         for opcode in opcodes.into_iter() {
             if opcode.code == OP_PROC {
-                let function_name = Plugin::name_for_function(function_counter);
-                let function = Function {
-                    name: function_name,
-                    opcodes: vec![],
-                };
+                let function = AstFunction::from(&opcode, &public_list);
                 functions.push(function);
-                function_counter += 1;
                 continue;
             }
 
@@ -41,10 +38,6 @@ impl Plugin {
 
         let plugin = Plugin { functions: functions };
         Ok(plugin)
-    }
-
-    fn name_for_function(function_counter: u32) -> String {
-        String::from(format!("sub_{:x}", function_counter))
     }
 
     pub fn to_string(&self) -> String {

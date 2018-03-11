@@ -1,6 +1,4 @@
 use std::io::Cursor;
-use std::io::prelude::*;
-use std::ffi::CString;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
 use super::super::util::ReadByteString;
