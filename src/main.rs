@@ -72,27 +72,26 @@ fn main() {
         Err(e) => die!("Amxmod unpack/parse error: {}", e),
     };
 
-    let opcodes = amxmod_plugin.opcodes().unwrap();
+    // let opcodes = amxmod_plugin.opcodes().unwrap();
+    // for op in opcodes.iter() {
+    //     if let Some(ref p) = op.param {
+    //         println!("0x{:X} {}  0x{:X}", op.address, op.code, p);
+    //     } else {
+    //         println!("0x{:X} {}", op.address, op.code);
+    //     }
+    // }
 
-    for op in opcodes.iter() {
-        if let Some(ref p) = op.param {
-            println!("0x{:X} {}  0x{:X}", op.address, op.code, p);
-        } else {
-            println!("0x{:X} {}", op.address, op.code);
-        }
-    }
-
-    let natives = amxmod_plugin.natives();
-    println!("\n\nNatives list:");
-    for native in natives {
-        println!("{}", native.name.to_str().unwrap());
-    }
-
-    let publics = amxmod_plugin.publics();
-    println!("\n\nPublics list:");
-    for public in publics {
-        println!("{}", public.name.to_str().unwrap());
-    }
+    // let natives = amxmod_plugin.natives();
+    // println!("\n\nNatives list:");
+    // for native in natives {
+    //     println!("{}", native.name.to_str().unwrap());
+    // }
+    //
+    // let publics = amxmod_plugin.publics();
+    // println!("\n\nPublics list:");
+    // for public in publics {
+    //     println!("{}", public.name.to_str().unwrap());
+    // }
 
     println!("\n\n");
     let ast_plugin = match AstPlugin::from_amxmod_plugin(&amxmod_plugin) {
