@@ -1,5 +1,6 @@
 use std::io::Cursor;
 use std::io::prelude::*;
+use std::ffi::CString;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::str;
 use super::super::util::ReadByteString;
@@ -209,25 +210,37 @@ impl Plugin {
     pub fn natives(&self) -> Vec<Native> {
         let slice = &self.bin[self.natives..self.libraries];
         slice.chunks(8) // Take natives by native struct
-           .map(|x| &x[4..8] ) // Extrace name_offset from struct
-           // TODO: Error handling?
-           // Convert name offset to number
-           .map(|mut x| x.read_u32::<LittleEndian>().unwrap() as usize )
-           .map(|x| (x, self.bin[x..].read_string_zero().unwrap()) )
-           .map(|(offset, name)| Native {name: name, address: offset})
-           .collect()
+           .map(|n_struct| {
+               // FIXME: Error handling
+               let mut address = &n_struct[0..4];
+               let address = address.read_u32::<LittleEndian>().unwrap() as usize;
+               let mut name_offset = &n_struct[4..8];
+               let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
+               let name = self.bin[name_offset..].read_string_zero().unwrap();
+
+               Native {
+                   name: name,
+                   address: address,
+               }
+           }).collect()
     }
 
     pub fn publics(&self) -> Vec<Public> {
         let slice = &self.bin[self.publics..self.natives];
-        slice.chunks(8) // Take publics by publics struct
-           .map(|x| &x[4..8] ) // Extrace name_offset from struct
-           // TODO: Error handling?
-           // Convert name offset to number
-           .map(|mut x| x.read_u32::<LittleEndian>().unwrap() as usize )
-           .map(|x| (x, self.bin[x..].read_string_zero().unwrap()) )
-           .map(|(offset, name)| Public {name: name, address: offset})
-           .collect()
+        slice.chunks(8) // Take natives by native struct
+           .map(|n_struct| {
+               // FIXME: Error handling
+               let mut address = &n_struct[0..4];
+               let address = address.read_u32::<LittleEndian>().unwrap() as usize;
+               let mut name_offset = &n_struct[4..8];
+               let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
+               let name = self.bin[name_offset..].read_string_zero().unwrap();
+
+               Public {
+                   name: name,
+                   address: address,
+               }
+           }).collect()
     }
 }
 
@@ -288,11 +301,11 @@ mod tests {
         let expected_natives = [
             Native {
                 name: CString::new("native_one").unwrap(),
-                address: 87,
+                address: 0,
             },
             Native {
                 name: CString::new("native_two").unwrap(),
-                address: 98,
+                address: 0,
             },
         ];
 
@@ -307,7 +320,7 @@ mod tests {
         let expected_publics = [
             Public {
                 name: CString::new("func").unwrap(),
-                address: 82,
+                address: 8,
             },
         ];
 
