@@ -2,10 +2,11 @@ use super::super::amxmod::Plugin as AmxPlugin;
 use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
 
+use super::TreeElement;
 use super::Function as AstFunction;
 
 pub struct Plugin {
-    functions: Vec<AstFunction>,
+    tree_elements: Vec<Box<TreeElement>>,
 }
 
 impl Plugin {
@@ -26,8 +27,8 @@ impl Plugin {
             }
 
             if opcode.code == OP_BREAK || opcode.code == OP_RETN {
-                let last_function = functions.last_mut().unwrap();
                 // FIXME: Handle when no functions were given yet
+                let last_function = functions.last_mut().unwrap();
                 last_function.opcodes.extend(&stack);
                 stack.clear();
                 continue;
@@ -36,17 +37,25 @@ impl Plugin {
             stack.push(opcode);
         }
 
-        let plugin = Plugin { functions: functions };
-        Ok(plugin)
-    }
-
-    pub fn to_string(&self) -> String {
-        let mut source = String::from("// Plugin source approximation starts here\n\n");
-
-        for function in self.functions.iter() {
-            source.push_str(&function.to_string())
+        let mut tree_elements: Vec<Box<TreeElement>> = vec![];
+        for f in functions.into_iter() {
+            tree_elements.push(Box::new(f));
         }
 
-        source
+        let plugin = Plugin { tree_elements: tree_elements };
+        Ok(plugin)
+    }
+}
+
+impl TreeElement for Plugin {
+    fn to_string(&self) -> Result<String, &'static str> {
+        let mut source = String::from("// Plugin source approximation starts here\n\n");
+
+        for tree_element in self.tree_elements.iter() {
+            let element_str = &tree_element.to_string()?;
+            source.push_str(&element_str);
+        }
+
+        Ok(source)
     }
 }

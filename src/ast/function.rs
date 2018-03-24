@@ -1,5 +1,6 @@
 use std::fmt;
 use super::super::amxmod::{Public, Opcode};
+use super::TreeElement;
 
 #[derive(PartialEq)]
 pub enum FunctionVisibility {
@@ -50,8 +51,10 @@ impl Function {
             visibility: visibility,
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl TreeElement for Function {
+    fn to_string(&self) -> Result<String, &'static str> {
         let mut source = String::new();
 
         source.push_str(&format!(
@@ -71,6 +74,6 @@ impl Function {
         }
 
         source.push_str("}\n\n");
-        source
+        Ok(source)
     }
 }
