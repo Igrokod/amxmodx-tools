@@ -1,11 +1,17 @@
 use std::io::Cursor;
 use byteorder::{ReadBytesExt, LittleEndian};
+use std::ffi::CString;
 use std::str;
 use super::super::util::ReadByteString;
 
 use super::Opcode;
 use super::Native;
 use super::Public;
+
+enum DatType {
+    String,
+    u32,
+}
 
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
@@ -29,6 +35,7 @@ impl Plugin {
     const AMXMOD_MAGIC: u16 = 0xF1E0;
     const FILE_VERSION: u8 = 8;
     const AMX_VERSION: u8 = 8;
+    const CELLSIZE: usize = 4;
 
     pub fn from<'a>(bin: &[u8]) -> Result<Plugin, &'a str> {
         let mut reader = Cursor::new(bin);
@@ -240,6 +247,41 @@ impl Plugin {
                }
            }).collect()
     }
+
+    fn dat_size(&self) -> usize {
+        self.hea - self.dat
+    }
+
+    fn dat_slice(&self) -> &[u8] {
+        &self.bin[self.dat..(self.dat + self.dat_size())]
+    }
+
+    fn is_addr_in_dat(&self, addr: usize) -> bool {
+        addr >= 0 && addr <= self.dat_size()
+    }
+
+    pub fn read_constant_auto_type(&self, addr: usize) -> Result<CString, &str> {
+        // use util::DebugU8;
+        // let cell = &self.bin[addr..addr+4];
+        // println!("{}", cell.printable());
+
+        // println!("{:?}", self.dat_slice().printable());
+
+        let byte_slice: Vec<u8> = self.dat_slice()
+            .chunks(Self::CELLSIZE)
+            .map(|x| x[0])
+            .take_while(|&x| x != 0)
+            .collect();
+
+        Ok(CString::new(byte_slice).unwrap())
+
+        // println!("{}", byte_slice[..].printable());
+        // for x in byte_slice {
+        //     println!("final {:?}", x);
+        // }
+
+        // println!("{}\n\n", byte_slice.printable());
+    }
 }
 
 #[cfg(test)]
@@ -250,6 +292,21 @@ mod tests {
     use super::Plugin;
     use super::Native;
     use super::Public;
+
+    fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {
+        use super::super::super::amxmodx::File as AmxxFile;
+        use std::fs::File;
+        use std::io::prelude::*;
+
+        let amxmodx_plugin = AmxxFile::from(&amxmodx_bin).unwrap();
+        let sections = amxmodx_plugin.sections().unwrap();
+        let amxmod_plugin = sections[section_number]
+            .unpack_section(&amxmodx_bin)
+            .unwrap();
+
+        let mut file = File::create("unpacked.amx").unwrap();
+        file.write_all(&amxmod_plugin.bin).unwrap();
+    }
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();
@@ -323,5 +380,12 @@ mod tests {
         ];
 
         assert_eq!(publics, expected_publics);
+    }
+
+    #[test]
+    fn it_read_constant_by_addr() {
+        let amxmod_bin = load_fixture("cell_constants.amx183");
+        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        amxmod_plugin.read_constant_auto_type(0x48);
     }
 }
