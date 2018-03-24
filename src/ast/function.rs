@@ -1,6 +1,7 @@
 use std::fmt;
-use super::super::amxmod::{Public, Opcode};
+use super::super::amxmod::Public;
 use super::TreeElement;
+use super::Opcode;
 
 #[derive(PartialEq)]
 pub enum FunctionVisibility {
@@ -20,14 +21,14 @@ impl fmt::Display for FunctionVisibility {
 
 pub struct Function {
     pub name: String,
-    pub opcodes: Vec<Opcode>,
+    pub tree_elements: Vec<Box<TreeElement>>,
     pub visibility: FunctionVisibility,
 }
 
 impl Function {
     pub fn from(opcode: &Opcode, public_list: &[Public]) -> Function {
         static mut STOCK_FUNCTION_COUNTER: u32 = 0;
-        let opcode_public = public_list.iter().find(|x| x.address == opcode.address);
+        let opcode_public = public_list.iter().find(|x| x.address == opcode.address());
 
         let visibility = if opcode_public.is_some() {
             FunctionVisibility::Public
@@ -47,7 +48,7 @@ impl Function {
 
         Function {
             name: name,
-            opcodes: vec![],
+            tree_elements: vec![],
             visibility: visibility,
         }
     }
@@ -63,14 +64,9 @@ impl TreeElement for Function {
             fname = self.name
         ));
 
-        for opcode in self.opcodes.iter() {
-            source.push_str(&format!("\t#emit {}", opcode.code));
-
-            if let Some(p) = opcode.param {
-                source.push_str(&format!("\t0x{:X}", p));
-            }
-
-            source.push('\n');
+        for element in self.tree_elements.iter() {
+            let element_source = element.to_string()?;
+            source.push_str(&element_source);
         }
 
         source.push_str("}\n\n");

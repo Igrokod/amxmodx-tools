@@ -1,8 +1,9 @@
 use super::super::amxmod::Plugin as AmxPlugin;
-use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
+use super::super::amxmod::Opcode;
 
 use super::TreeElement;
+use super::Opcode as AstOpcode;
 use super::Function as AstFunction;
 
 pub struct Plugin {
@@ -20,8 +21,10 @@ impl Plugin {
         let opcodes = amx_plugin.opcodes().unwrap();
 
         for opcode in opcodes.into_iter() {
+            let ast_opcode = AstOpcode::from(opcode.clone());
+
             if opcode.code == OP_PROC {
-                let function = AstFunction::from(&opcode, &public_list);
+                let function = AstFunction::from(&ast_opcode, &public_list);
                 functions.push(function);
                 continue;
             }
@@ -29,7 +32,13 @@ impl Plugin {
             if opcode.code == OP_BREAK || opcode.code == OP_RETN {
                 // FIXME: Handle when no functions were given yet
                 let last_function = functions.last_mut().unwrap();
-                last_function.opcodes.extend(&stack);
+
+                // last_function.tree_elements.extend(&stack);
+                for o in stack.iter() {
+                    let ast_opcode = AstOpcode::from(o.clone());
+                    last_function.tree_elements.push(Box::new(ast_opcode));
+                }
+
                 stack.clear();
                 continue;
             }
@@ -37,6 +46,7 @@ impl Plugin {
             stack.push(opcode);
         }
 
+        // TODO: Ugly, find a better way
         let mut tree_elements: Vec<Box<TreeElement>> = vec![];
         for f in functions.into_iter() {
             tree_elements.push(Box::new(f));
