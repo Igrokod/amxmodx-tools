@@ -57,7 +57,7 @@ impl Function {
 }
 
 impl TreeElement for Function {
-    fn to_string(&self) -> Result<String, &'static str> {
+    fn to_string(&self, ident: usize) -> Result<String, &'static str> {
         let mut source = String::new();
 
         source.push_str(&format!(
@@ -67,7 +67,7 @@ impl TreeElement for Function {
         ));
 
         for element in self.tree_elements.iter() {
-            let element_source = element.to_string()?;
+            let element_source = element.to_string(ident + 1)?;
             source.push_str(&element_source);
         }
 

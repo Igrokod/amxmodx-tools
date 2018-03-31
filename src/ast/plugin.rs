@@ -73,12 +73,13 @@ impl<'a> Plugin<'a> {
     }
 }
 
+// TODO: Plugin is not a tree element
 impl<'a> TreeElement for Plugin<'a> {
-    fn to_string(&self) -> Result<String, &'static str> {
+    fn to_string(&self, ident: usize) -> Result<String, &'static str> {
         let mut source = String::from("// Plugin source approximation starts here\n\n");
 
         for tree_element in self.tree_elements.iter() {
-            let element_str = &tree_element.to_string()?;
+            let element_str = &tree_element.to_string(ident + 1)?;
             source.push_str(&element_str);
         }
 

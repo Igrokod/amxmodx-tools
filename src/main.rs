@@ -100,5 +100,5 @@ fn main() {
         Err(e) => die!("Cannot convert plugin opcodes to AST tree: {}", e),
     };
     ast_plugin.opcodes_into_functions();
-    println!("{}", ast_plugin.to_string().unwrap());
+    println!("{}", ast_plugin.to_string(0).unwrap());
 }
