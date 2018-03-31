@@ -1,63 +1,79 @@
 use super::super::amxmod::Plugin as AmxPlugin;
-use super::super::amxmod::OpcodeType::*;
 use super::super::amxmod::Opcode;
+use super::super::amxmod::OpcodeType::*;
 
 use super::TreeElement;
-use super::Opcode as AstOpcode;
+use super::TreeElementType;
+use super::TreeElementType::*;
 use super::Function as AstFunction;
 
-pub struct Plugin {
-    tree_elements: Vec<Box<TreeElement>>,
+pub struct Plugin<'a> {
+    tree_elements: Vec<TreeElementType>,
+    amx_plugin: &'a AmxPlugin,
 }
 
-impl Plugin {
-    pub fn from_amxmod_plugin(amx_plugin: &AmxPlugin) -> Result<Plugin, &'static str> {
-        let public_list = amx_plugin.publics();
-        // let native_list = amx_plugin.natives();
+impl<'a> Plugin<'a> {
+    pub fn from(amx_plugin: &'a AmxPlugin) -> Result<Plugin<'a>, &'static str> {
+        let mut tree_elements: Vec<TreeElementType> = vec![];
 
-        let mut functions: Vec<AstFunction> = vec![];
-        let mut stack: Vec<Opcode> = vec![];
         // FIXME: Error handling
         let opcodes = amx_plugin.opcodes().unwrap();
-
         for opcode in opcodes.into_iter() {
-            let ast_opcode = AstOpcode::from(opcode.clone());
-
-            if opcode.code == OP_PROC {
-                let function = AstFunction::from(&ast_opcode, &public_list);
-                functions.push(function);
-                continue;
-            }
-
-            if opcode.code == OP_BREAK || opcode.code == OP_RETN {
-                // FIXME: Handle when no functions were given yet
-                let last_function = functions.last_mut().unwrap();
-
-                // last_function.tree_elements.extend(&stack);
-                for o in stack.iter() {
-                    let ast_opcode = AstOpcode::from(o.clone());
-                    last_function.tree_elements.push(Box::new(ast_opcode));
-                }
-
-                stack.clear();
-                continue;
-            }
-
-            stack.push(opcode);
+            tree_elements.push(OpcodeType(opcode));
         }
 
-        // TODO: Ugly, find a better way
-        let mut tree_elements: Vec<Box<TreeElement>> = vec![];
-        for f in functions.into_iter() {
-            tree_elements.push(Box::new(f));
-        }
-
-        let plugin = Plugin { tree_elements: tree_elements };
+        let plugin = Plugin {
+            tree_elements: tree_elements,
+            amx_plugin: amx_plugin,
+        };
         Ok(plugin)
+    }
+
+    pub fn opcodes_into_functions(&mut self) {
+        trace!("Pack opcodes into functions");
+        let public_list = self.amx_plugin.publics();
+
+        let mut new_tree: Vec<TreeElementType> = vec![];
+        let mut current_function: Option<AstFunction> = None;
+
+        for element in self.tree_elements.clone().into_iter() {
+            let opcode = match element {
+                OpcodeType(o) => o,
+                _ => {
+                    new_tree.push(element);
+                    continue;
+                }
+            };
+
+            // Open function
+            if opcode.code == OP_PROC {
+                // TODO: Check if func already exist
+                current_function = Some(AstFunction::from(&opcode, &public_list));
+                continue;
+            }
+
+            // Close function
+            if opcode.code == OP_RETN && current_function.is_some() {
+                new_tree.push(FunctionType(current_function.unwrap()));
+                current_function = None;
+                continue;
+            }
+
+            // Accumulate function opcodes
+            // should be the last before top level opcodes accumulation
+            if let Some(mut f) = current_function.as_mut() {
+                f.tree_elements.push(OpcodeType(opcode));
+                continue;
+            }
+
+            new_tree.push(OpcodeType(opcode));
+        }
+
+        self.tree_elements = new_tree;
     }
 }
 
-impl TreeElement for Plugin {
+impl<'a> TreeElement for Plugin<'a> {
     fn to_string(&self) -> Result<String, &'static str> {
         let mut source = String::from("// Plugin source approximation starts here\n\n");
 

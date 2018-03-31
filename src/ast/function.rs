@@ -1,9 +1,10 @@
 use std::fmt;
 use super::super::amxmod::Public;
 use super::TreeElement;
-use super::Opcode;
+use super::TreeElementType;
+use super::super::amxmod::Opcode;
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum FunctionVisibility {
     Public,
     Stock,
@@ -19,16 +20,17 @@ impl fmt::Display for FunctionVisibility {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
-    pub tree_elements: Vec<Box<TreeElement>>,
+    pub tree_elements: Vec<TreeElementType>,
     pub visibility: FunctionVisibility,
 }
 
 impl Function {
     pub fn from(opcode: &Opcode, public_list: &[Public]) -> Function {
         static mut STOCK_FUNCTION_COUNTER: u32 = 0;
-        let opcode_public = public_list.iter().find(|x| x.address == opcode.address());
+        let opcode_public = public_list.iter().find(|x| x.address == opcode.address);
 
         let visibility = if opcode_public.is_some() {
             FunctionVisibility::Public
