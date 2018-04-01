@@ -178,7 +178,6 @@ impl Decompiler {
 
                         opcode.param.unwrap() as usize / AmxPlugin::CELLSIZE
                     };
-                    println!("Native call arguments count: {}", native_arguments_count);
 
                     // Sysreq.c (current) - PUSH.c with args count - args count
                     let args_start = position - 1 - native_arguments_count;
@@ -281,6 +280,27 @@ impl Decompiler {
                         };
 
                         if opcode.code == OP_ZERO_PRI {
+                            current_tree.remove(opcode_position);
+                        }
+                    }
+
+                    // Check for trash OP_BREAK
+                    {
+                        let opcode_position = position + 1;
+
+                        let opcode = {
+                            let element = match current_tree.get(opcode_position) {
+                                Some(e) => e,
+                                None => break,
+                            };
+
+                            match element {
+                                &OpcodeType(o) => o,
+                                _ => break,
+                            }
+                        };
+
+                        if opcode.code == OP_BREAK {
                             current_tree.remove(opcode_position);
                         }
                     }

@@ -31,7 +31,7 @@ impl TreeElement for FunctionCall {
             .join(", ");
 
         source.push_str(&format!(
-            "{native}({args})\n",
+            "{native}({args});\n",
             native = self.name,
             args = args
         ));
