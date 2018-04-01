@@ -71,7 +71,55 @@ impl Decompiler {
     }
 
     pub fn decompile_opcodes_by_templates(&mut self) -> Result<(), &'static str> {
+        self.clean_functions_break()?;
         self.decompile_native_calls()?;
+        Ok(())
+    }
+
+    pub fn clean_functions_break(&mut self) -> Result<(), &'static str> {
+        trace!("Clean functions from trash break");
+
+        let ast_plugin = &mut self.ast_plugin;
+        let amx_plugin = &mut self.amx_plugin;
+
+        let functions: Vec<_> = ast_plugin
+            .tree_elements
+            .iter_mut()
+            .map(|e| match e {
+                &mut FunctionType(ref mut f) => Some(f),
+                _ => None,
+            })
+            .filter(|e| e.is_some())
+            .map(|f| f.unwrap())
+            .collect();
+
+        for function in functions {
+            let mut addr = 0;
+            let mut current_tree = &mut function.tree_elements;
+
+            // Iterate and modify over function tree
+            while addr < current_tree.len() {
+                addr += 1;
+                let mut position = addr - 1;
+
+                let opcode = {
+                    // Should never fail
+                    let element = current_tree.get(position).unwrap();
+
+                    match element {
+                        &OpcodeType(o) => o,
+                        _ => continue,
+                    }
+                };
+
+                if opcode.code != OP_BREAK {
+                    break;
+                }
+
+                current_tree.remove(position);
+                addr -= 1;
+            }
+        }
         Ok(())
     }
 
