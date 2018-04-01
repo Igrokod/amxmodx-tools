@@ -9,6 +9,7 @@ use std::fs::File;
 use clap::{Arg, App};
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Plugin as AstPlugin;
+use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
 
 macro_rules! die {
@@ -99,6 +100,10 @@ fn main() {
         Ok(p) => p,
         Err(e) => die!("Cannot convert plugin opcodes to AST tree: {}", e),
     };
-    ast_plugin.opcodes_into_functions();
+
+    let mut decompiler = Decompiler::from(ast_plugin);
+    decompiler.opcodes_into_functions();
+    let mut ast_plugin = decompiler.into_inner();
+
     println!("{}", ast_plugin.to_string(0).unwrap());
 }
