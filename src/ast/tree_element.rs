@@ -1,10 +1,12 @@
 use super::super::amxmod::Opcode;
 use super::function::Function;
+use super::function_call::FunctionCall;
 
 #[derive(Debug, Clone)]
 pub enum TreeElementType {
     OpcodeType(Opcode),
     FunctionType(Function),
+    FunctionCallType(FunctionCall),
 }
 
 pub trait TreeElement {
@@ -35,7 +37,7 @@ impl TreeElement for TreeElementType {
         match *self {
             TreeElementType::OpcodeType(o) => o.to_string(ident),
             TreeElementType::FunctionType(ref f) => f.to_string(ident),
-            _ => Ok(String::from("/* unknown tree element, internal error */")),
+            TreeElementType::FunctionCallType(ref c) => c.to_string(ident),
         }
     }
 }

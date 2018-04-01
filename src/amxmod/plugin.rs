@@ -35,7 +35,7 @@ impl Plugin {
     const AMXMOD_MAGIC: u16 = 0xF1E0;
     const FILE_VERSION: u8 = 8;
     const AMX_VERSION: u8 = 8;
-    const CELLSIZE: usize = 4;
+    pub const CELLSIZE: usize = 4;
 
     pub fn from<'a>(bin: &[u8]) -> Result<Plugin, &'a str> {
         let mut reader = Cursor::new(bin);
@@ -267,7 +267,7 @@ impl Plugin {
 
         // println!("{:?}", self.dat_slice().printable());
 
-        let byte_slice: Vec<u8> = self.dat_slice()
+        let byte_slice: Vec<u8> = self.dat_slice()[addr..]
             .chunks(Self::CELLSIZE)
             .map(|x| x[0])
             .take_while(|&x| x != 0)
@@ -292,6 +292,7 @@ mod tests {
     use super::Plugin;
     use super::Native;
     use super::Public;
+    use super::super::super::amxmod::OpcodeType::*;
 
     fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {
         use super::super::super::amxmodx::File as AmxxFile;
@@ -385,7 +386,8 @@ mod tests {
     #[test]
     fn it_read_constant_by_addr() {
         let amxmod_bin = load_fixture("cell_constants.amx183");
-        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
-        amxmod_plugin.read_constant_auto_type(0x48);
+        let amx_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let resp = amx_plugin.read_constant_auto_type(0);
+        assert_eq!("simple plugin", resp.unwrap().into_string().unwrap());
     }
 }

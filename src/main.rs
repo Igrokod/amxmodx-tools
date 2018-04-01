@@ -8,7 +8,6 @@ use std::io::prelude::*;
 use std::fs::File;
 use clap::{Arg, App};
 use rxxma::amxmodx::File as AmxmodxFile;
-use rxxma::ast::Plugin as AstPlugin;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
 
@@ -66,44 +65,18 @@ fn main() {
         None => die!("File has no 32 bit sections. 64 bit are not supported"),
     };
 
-    trace!("-----------------------------------------");
-    trace!("Reading amxmod plugin from 32 bit section");
-    trace!("-----------------------------------------");
+    trace!("-------------------------------------------");
+    trace!(" Reading amxmod plugin from 32 bit section ");
+    trace!("-------------------------------------------");
     let amxmod_plugin = match section_32bit.unpack_section(&file_contents) {
         Ok(p) => p,
         Err(e) => die!("Amxmod unpack/parse error: {}", e),
     };
 
-    // let opcodes = amxmod_plugin.opcodes().unwrap();
-    // for op in opcodes.iter() {
-    //     if let Some(ref p) = op.param {
-    //         println!("0x{:X} {}  0x{:X}", op.address, op.code, p);
-    //     } else {
-    //         println!("0x{:X} {}", op.address, op.code);
-    //     }
-    // }
-
-    // let natives = amxmod_plugin.natives();
-    // println!("\n\nNatives list:");
-    // for native in natives {
-    //     println!("{}", native.name.to_str().unwrap());
-    // }
-    //
-    // let publics = amxmod_plugin.publics();
-    // println!("\n\nPublics list:");
-    // for public in publics {
-    //     println!("{}", public.name.to_str().unwrap());
-    // }
-
-    println!("\n\n");
-    let mut ast_plugin = match AstPlugin::from(&amxmod_plugin) {
-        Ok(p) => p,
-        Err(e) => die!("Cannot convert plugin opcodes to AST tree: {}", e),
-    };
-
-    let mut decompiler = Decompiler::from(ast_plugin);
+    let mut decompiler = Decompiler::from(amxmod_plugin);
     decompiler.opcodes_into_functions();
-    let mut ast_plugin = decompiler.into_inner();
+    decompiler.decompile_opcodes_by_templates().unwrap();
 
+    let ast_plugin = decompiler.into_tree();
     println!("{}", ast_plugin.to_string(0).unwrap());
 }
