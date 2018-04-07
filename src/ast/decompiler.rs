@@ -80,7 +80,6 @@ impl Decompiler {
         trace!("Clean functions from trash break");
 
         let ast_plugin = &mut self.ast_plugin;
-        let amx_plugin = &mut self.amx_plugin;
 
         let functions: Vec<_> = ast_plugin
             .tree_elements

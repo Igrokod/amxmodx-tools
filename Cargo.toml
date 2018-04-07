@@ -3,6 +3,10 @@ name = "rxxma"
 version = "0.0.1"
 authors = ["Fedcomp"]
 
+[features]
+# Treat warnings as a build error.
+strict = []
+
 [dependencies]
 clap = "^2.30.0"
 byteorder = "1"

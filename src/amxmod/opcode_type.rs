@@ -1,9 +1,9 @@
+
 use std::fmt;
 
 enum_from_primitive! {
 #[derive(Copy, Clone, Debug, PartialEq)]
-#[allow(non_snake_case)]
-#[allow(non_snake_case)]
+#[allow(non_camel_case_types)]
 pub enum OpcodeType {
     OP_NONE, // invalid opcode
     OP_LOAD_PRI,
@@ -144,6 +144,7 @@ pub enum OpcodeType {
     OP_SYMTAG,  // obsolete
     OP_BREAK, // End of AMXX op codes
     // List of rxxma pseudo opcodes, careful!
+    // TODO: Opcode types with multiple params
     OP_CASENONE,
     OP_CASE,
     OP_CASEJMP

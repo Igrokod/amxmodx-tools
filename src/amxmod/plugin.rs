@@ -8,11 +8,6 @@ use super::Opcode;
 use super::Native;
 use super::Public;
 
-enum DatType {
-    String,
-    u32,
-}
-
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
     flags: u16,
@@ -257,15 +252,13 @@ impl Plugin {
     }
 
     fn is_addr_in_dat(&self, addr: usize) -> bool {
-        addr >= 0 && addr <= self.dat_size()
+        addr <= self.dat_size()
     }
 
     pub fn read_constant_auto_type(&self, addr: usize) -> Result<CString, &str> {
-        // use util::DebugU8;
-        // let cell = &self.bin[addr..addr+4];
-        // println!("{}", cell.printable());
-
-        // println!("{:?}", self.dat_slice().printable());
+        if !self.is_addr_in_dat(addr) {
+            return Err("Invalid constant addr");
+        }
 
         let byte_slice: Vec<u8> = self.dat_slice()[addr..]
             .chunks(Self::CELLSIZE)
@@ -274,13 +267,6 @@ impl Plugin {
             .collect();
 
         Ok(CString::new(byte_slice).unwrap())
-
-        // println!("{}", byte_slice[..].printable());
-        // for x in byte_slice {
-        //     println!("final {:?}", x);
-        // }
-
-        // println!("{}\n\n", byte_slice.printable());
     }
 }
 
@@ -292,22 +278,22 @@ mod tests {
     use super::Plugin;
     use super::Native;
     use super::Public;
-    use super::super::super::amxmod::OpcodeType::*;
 
-    fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {
-        use super::super::super::amxmodx::File as AmxxFile;
-        use std::fs::File;
-        use std::io::prelude::*;
-
-        let amxmodx_plugin = AmxxFile::from(&amxmodx_bin).unwrap();
-        let sections = amxmodx_plugin.sections().unwrap();
-        let amxmod_plugin = sections[section_number]
-            .unpack_section(&amxmodx_bin)
-            .unwrap();
-
-        let mut file = File::create("unpacked.amx").unwrap();
-        file.write_all(&amxmod_plugin.bin).unwrap();
-    }
+    // TODO: Support amx extraction in programm itself
+    // fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {
+    //     use super::super::super::amxmodx::File as AmxxFile;
+    //     use std::fs::File;
+    //     use std::io::prelude::*;
+    //
+    //     let amxmodx_plugin = AmxxFile::from(&amxmodx_bin).unwrap();
+    //     let sections = amxmodx_plugin.sections().unwrap();
+    //     let amxmod_plugin = sections[section_number]
+    //         .unpack_section(&amxmodx_bin)
+    //         .unwrap();
+    //
+    //     let mut file = File::create("unpacked.amx").unwrap();
+    //     file.write_all(&amxmod_plugin.bin).unwrap();
+    // }
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();
@@ -346,7 +332,7 @@ mod tests {
     fn it_read_opcodes() {
         let amxmod_bin = load_fixture("simple.amx183");
         let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
-        amxmod_plugin.opcodes();
+        amxmod_plugin.opcodes().unwrap();
     }
 
     #[test]

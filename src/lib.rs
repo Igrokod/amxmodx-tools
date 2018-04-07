@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "strict", deny(warnings))]
+
 extern crate byteorder;
 extern crate flate2;
 #[macro_use]
