@@ -1,12 +1,11 @@
-use std::io::Cursor;
+use super::Native;
+use super::Opcode;
+use super::Public;
+use super::super::util::ReadByteString;
 use byteorder::{ReadBytesExt, LittleEndian};
 use std::ffi::CString;
+use std::io::Cursor;
 use std::str;
-use super::super::util::ReadByteString;
-
-use super::Opcode;
-use super::Native;
-use super::Public;
 
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
@@ -272,12 +271,12 @@ impl Plugin {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-    use std::fs::File;
-    use std::ffi::CString;
-    use super::Plugin;
     use super::Native;
+    use super::Plugin;
     use super::Public;
+    use std::ffi::CString;
+    use std::fs::File;
+    use std::io::prelude::*;
 
     // TODO: Support amx extraction in programm itself
     // fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {

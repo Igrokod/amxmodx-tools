@@ -13,8 +13,8 @@ impl ReadByteString for [u8] {
 
 #[cfg(test)]
 mod tests {
-    use super::ReadByteString;
     use super::CString;
+    use super::ReadByteString;
 
     #[test]
     fn it_read_zero_terminated_string_to_zerobyte() {

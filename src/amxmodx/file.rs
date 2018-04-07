@@ -1,7 +1,7 @@
-use std::io::Cursor;
-use byteorder::{ReadBytesExt, LittleEndian};
-use std::str;
 use super::Section;
+use byteorder::{ReadBytesExt, LittleEndian};
+use std::io::Cursor;
+use std::str;
 
 pub struct File<'a> {
     pub bin: &'a [u8],
@@ -84,10 +84,10 @@ impl<'a> File<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-    use std::fs::File;
     use super::File as AmxmodxFile;
     use super::super::Section;
+    use std::fs::File;
+    use std::io::prelude::*;
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();

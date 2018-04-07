@@ -1,9 +1,9 @@
+use super::opcode_type::*;
 use byteorder::{ReadBytesExt, LittleEndian};
-use std::str;
+use enum_primitive::FromPrimitive;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
-use super::opcode_type::*;
-use enum_primitive::FromPrimitive;
+use std::str;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Opcode {
@@ -152,9 +152,9 @@ impl Opcode {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use super::Opcode;
     use super::OpcodeType::*;
+    use std::io::Cursor;
 
     #[test]
     fn it_read_opcode() {

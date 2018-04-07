@@ -1,8 +1,7 @@
-use super::super::amxmod::Opcode;
-
 use super::TreeElement;
 use super::TreeElementType;
 use super::TreeElementType::*;
+use super::super::amxmod::Opcode;
 
 pub struct Plugin {
     pub tree_elements: Vec<TreeElementType>,

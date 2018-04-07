@@ -1,9 +1,9 @@
-use std::io::Cursor;
-use byteorder::{ReadBytesExt, LittleEndian};
-use std::str;
-use flate2::read::ZlibDecoder;
-use std::io::Read;
 use super::super::amxmod::Plugin;
+use byteorder::{ReadBytesExt, LittleEndian};
+use flate2::read::ZlibDecoder;
+use std::io::Cursor;
+use std::io::Read;
+use std::str;
 
 #[derive(Debug, PartialEq)]
 pub struct Section {
@@ -85,9 +85,9 @@ impl Section {
 
 #[cfg(test)]
 mod tests {
-    use std::io::prelude::*;
-    use std::fs::File;
     use super::Section;
+    use std::fs::File;
+    use std::io::prelude::*;
 
     const AMXX_HEADER_SIZE: usize = 7;
 

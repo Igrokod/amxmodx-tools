@@ -4,12 +4,12 @@ extern crate log;
 extern crate env_logger;
 extern crate rxxma;
 
-use std::io::prelude::*;
-use std::fs::File;
 use clap::{Arg, App};
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
+use std::fs::File;
+use std::io::prelude::*;
 
 macro_rules! die {
     ($fmt:expr) => ({

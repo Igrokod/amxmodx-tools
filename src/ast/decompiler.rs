@@ -1,12 +1,11 @@
-use super::super::amxmod::OpcodeType::*;
-use super::super::amxmod::Opcode;
-use super::super::amxmod::Plugin as AmxPlugin;
-
-use super::TreeElementType;
-use super::TreeElementType::*;
 use super::Function as AstFunction;
 use super::Plugin as AstPlugin;
+use super::TreeElementType;
+use super::TreeElementType::*;
 use super::function_call::{FunctionCall, Argument};
+use super::super::amxmod::Opcode;
+use super::super::amxmod::OpcodeType::*;
+use super::super::amxmod::Plugin as AmxPlugin;
 
 pub struct Decompiler {
     pub amx_plugin: AmxPlugin,

@@ -1,4 +1,3 @@
-
 use std::fmt;
 
 enum_from_primitive! {

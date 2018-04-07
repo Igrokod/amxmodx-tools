@@ -1,5 +1,5 @@
-use std::ops::Range;
 use std::char;
+use std::ops::Range;
 
 pub trait DebugU8 {
     const PRINTABLE_RANGE: Range<u8> = 0x20..0x7E;
