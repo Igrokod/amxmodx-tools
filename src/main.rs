@@ -22,6 +22,39 @@ macro_rules! die {
     });
 }
 
+fn io_to_str(e: std::io::Error) -> String {
+    e.to_string()
+}
+
+fn decompile(file_path: &str) -> Result<String, String> {
+    let file_contents = File::open(file_path)
+        .and_then(|mut f| {
+            let mut file_contents: Vec<u8> = Vec::new();
+            f.read_to_end(&mut file_contents)?;
+            Ok(file_contents)
+        })
+        .map_err(io_to_str)?;
+
+    let amxmodx_file = AmxmodxFile::from(&file_contents)?;
+    let sections = amxmodx_file.sections()?;
+
+    let section_32bit = sections.into_iter().find(|ref s| s.cellsize == 4).ok_or(
+        "File has no 32 bit sections. 64 bit are not supported",
+    )?;
+
+    trace!("-------------------------------------------");
+    trace!(" Reading amxmod plugin from 32 bit section ");
+    trace!("-------------------------------------------");
+    let amxmod_plugin = section_32bit.unpack_section(&file_contents)?;
+
+    let mut decompiler = Decompiler::from(amxmod_plugin);
+    decompiler.opcodes_into_functions();
+    decompiler.decompile_opcodes_by_templates().unwrap();
+    let ast_plugin = decompiler.into_tree();
+
+    Ok(ast_plugin.to_string(0)?)
+}
+
 fn main() {
     env_logger::init();
 
@@ -39,44 +72,8 @@ fn main() {
         .get_matches();
 
     let file_path = matches.value_of("file").unwrap();
-    let mut file = match File::open(file_path) {
-        Ok(bin) => bin,
-        Err(e) => die!("Cannot open file: {}", e),
-    };
-
-    let mut file_contents: Vec<u8> = Vec::new();
-    match file.read_to_end(&mut file_contents) {
-        Ok(_) => (),
-        Err(e) => die!("Cannot read file: {}", e),
-    };
-
-    let amxmodx_file = match AmxmodxFile::from(&file_contents) {
-        Ok(a) => a,
-        Err(e) => die!("File parsing error: {}", e),
-    };
-
-    let sections = match amxmodx_file.sections() {
-        Ok(s) => s,
-        Err(e) => die!("Sections read error: {}", e),
-    };
-
-    let section_32bit = match sections.into_iter().find(|ref s| s.cellsize == 4) {
-        Some(s) => s,
-        None => die!("File has no 32 bit sections. 64 bit are not supported"),
-    };
-
-    trace!("-------------------------------------------");
-    trace!(" Reading amxmod plugin from 32 bit section ");
-    trace!("-------------------------------------------");
-    let amxmod_plugin = match section_32bit.unpack_section(&file_contents) {
-        Ok(p) => p,
-        Err(e) => die!("Amxmod unpack/parse error: {}", e),
-    };
-
-    let mut decompiler = Decompiler::from(amxmod_plugin);
-    decompiler.opcodes_into_functions();
-    decompiler.decompile_opcodes_by_templates().unwrap();
-
-    let ast_plugin = decompiler.into_tree();
-    println!("{}", ast_plugin.to_string(0).unwrap());
+    match decompile(file_path) {
+        Ok(source) => println!("{}", source),
+        Err(e) => die!("{}", e),
+    }
 }
