@@ -1,5 +1,5 @@
 use super::super::amxmod::Plugin;
-use byteorder::{ReadBytesExt, LittleEndian};
+use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 use std::io::Cursor;
 use std::io::Read;

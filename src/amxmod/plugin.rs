@@ -2,7 +2,7 @@ use super::Native;
 use super::Opcode;
 use super::Public;
 use super::super::util::ReadByteString;
-use byteorder::{ReadBytesExt, LittleEndian};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::ffi::CString;
 use std::io::Cursor;
 use std::str;

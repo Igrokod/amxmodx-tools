@@ -4,7 +4,7 @@ extern crate log;
 extern crate env_logger;
 extern crate rxxma;
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;

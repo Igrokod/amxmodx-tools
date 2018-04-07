@@ -1,5 +1,5 @@
 use super::Section;
-use byteorder::{ReadBytesExt, LittleEndian};
+use byteorder::{LittleEndian, ReadBytesExt};
 use std::io::Cursor;
 use std::str;
 

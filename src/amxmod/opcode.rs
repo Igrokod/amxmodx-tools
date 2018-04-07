@@ -1,5 +1,5 @@
 use super::opcode_type::*;
-use byteorder::{ReadBytesExt, LittleEndian};
+use byteorder::{LittleEndian, ReadBytesExt};
 use enum_primitive::FromPrimitive;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
