@@ -5,6 +5,7 @@ extern crate env_logger;
 extern crate rxxma;
 
 use clap::{App, Arg};
+use rxxma::amxmod::Plugin as AmxPlugin;
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
@@ -26,14 +27,18 @@ fn io_to_str(e: std::io::Error) -> String {
     e.to_string()
 }
 
-fn decompile(file_path: &str) -> Result<String, String> {
-    let file_contents = File::open(file_path)
+fn read_from_file(file_path: &str) -> Result<Vec<u8>, String> {
+    File::open(file_path)
         .and_then(|mut f| {
             let mut file_contents: Vec<u8> = Vec::new();
             f.read_to_end(&mut file_contents)?;
             Ok(file_contents)
         })
-        .map_err(io_to_str)?;
+        .map_err(io_to_str)
+}
+
+fn read_32bit_section(file_path: &str) -> Result<AmxPlugin, String> {
+    let file_contents = read_from_file(file_path)?;
 
     let amxmodx_file = AmxmodxFile::from(&file_contents)?;
     let sections = amxmodx_file.sections()?;
@@ -45,7 +50,13 @@ fn decompile(file_path: &str) -> Result<String, String> {
     trace!("-------------------------------------------");
     trace!(" Reading amxmod plugin from 32 bit section ");
     trace!("-------------------------------------------");
-    let amxmod_plugin = section_32bit.unpack_section(&file_contents)?;
+    section_32bit.unpack_section(&file_contents).map_err(|e| {
+        e.to_string()
+    })
+}
+
+fn decompile(file_path: &str) -> Result<String, String> {
+    let amxmod_plugin = read_32bit_section(file_path)?;
 
     let mut decompiler = Decompiler::from(amxmod_plugin);
     decompiler.opcodes_into_functions();
@@ -72,8 +83,13 @@ fn main() {
         .get_matches();
 
     let file_path = matches.value_of("file").unwrap();
-    match decompile(file_path) {
-        Ok(source) => println!("{}", source),
-        Err(e) => die!("{}", e),
-    }
+
+    let source = {
+        match decompile(file_path) {
+            Ok(s) => s,
+            Err(e) => die!("{}", e),
+        }
+    };
+
+    println!("{}", source);
 }
