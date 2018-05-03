@@ -1,3 +1,5 @@
+mod sections;
+
 use super::Section;
 use super::super::util::TryFrom;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -8,33 +10,13 @@ use std::io::Read;
 use std::path::PathBuf;
 use std::str;
 
-pub struct File {
-    pub bin: Vec<u8>,
-    pub sections: u8,
-}
-
 const MAGIC: u32 = 0x414d5858;
 const COMPATIBLE_VERSION: u16 = 768;
 const AMXX_HEADER_SIZE: usize = 7;
 
-impl File {
-    pub fn sections(&self) -> Result<Vec<Section>, &str> {
-        let mut sections: Vec<Section> = vec![];
-
-        for i in 0..self.sections {
-            trace!("---------------");
-            trace!("Reading section {}", i + 1);
-            let section_offset = AMXX_HEADER_SIZE + (Section::SIZE * i as usize);
-            let section_bin = &self.bin[section_offset..];
-            let section = match Section::from(section_bin) {
-                Ok(s) => s,
-                Err(e) => return Err(e),
-            };
-            sections.push(section);
-        }
-
-        Ok(sections)
-    }
+pub struct File {
+    pub bin: Vec<u8>,
+    pub sections: u8,
 }
 
 impl TryFrom<Vec<u8>> for File {
