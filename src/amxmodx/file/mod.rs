@@ -1,14 +1,10 @@
 mod sections;
+mod try_from_file;
 
 use super::Section;
 use super::super::util::TryFrom;
 use byteorder::{LittleEndian, ReadBytesExt};
-use failure::Error;
-use std::fs::File as IoFile;
 use std::io::Cursor;
-use std::io::Read;
-use std::path::PathBuf;
-use std::str;
 
 const MAGIC: u32 = 0x414d5858;
 const COMPATIBLE_VERSION: u16 = 768;
@@ -76,25 +72,11 @@ impl TryFrom<Vec<u8>> for File {
     }
 }
 
-impl TryFrom<PathBuf> for File {
-    type Error = Error;
-
-    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-        let mut open_result = IoFile::open(path)?;
-        let mut file_contents: Vec<u8> = Vec::new();
-        open_result.read_to_end(&mut file_contents)?;
-
-        Self::try_from(file_contents).map_err(|e| format_err!("{}", e))
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::File as AmxmodxFile;
-    use super::super::Section;
     use std::fs::File;
     use std::io::prelude::*;
-    use std::path::PathBuf;
     use util::try_from::TryFrom;
 
     fn load_fixture(filename: &str) -> Vec<u8> {
@@ -108,42 +90,9 @@ mod tests {
     }
 
     #[test]
-    fn it_try_from_file() {
-        let path = PathBuf::from("test/fixtures/simple.amxx183");
-        assert!(AmxmodxFile::try_from(path).is_ok());
-
-        let path = PathBuf::from("test/fixtures/unexistent");
-        assert!(AmxmodxFile::try_from(path).is_err());
-    }
-
-    #[test]
     fn it_load_file_when_binary_is_correct() {
         let amxmodx_bin = load_fixture("simple.amxx183");
         assert!(AmxmodxFile::try_from(amxmodx_bin).is_ok());
-    }
-
-    #[test]
-    fn it_return_multiple_sections() {
-        let amxmodx_bin = load_fixture("simple.amxx181");
-        let amxmodx_file = AmxmodxFile::try_from(amxmodx_bin).unwrap();
-        let extracted_sections = amxmodx_file.sections().unwrap();
-        let expected_sections = [
-            Section {
-                cellsize: 4,
-                disksize: 161,
-                imagesize: 288,
-                memsize: 16672,
-                offset: 41,
-            },
-            Section {
-                cellsize: 8,
-                disksize: 177,
-                imagesize: 488,
-                memsize: 33256,
-                offset: 202,
-            },
-        ];
-        assert_eq!(extracted_sections, expected_sections);
     }
 
     #[test]
@@ -208,14 +157,5 @@ mod tests {
             result.err().unwrap(),
             "More than two sections (malicious file?)"
         );
-    }
-
-    #[test]
-    fn it_err_on_sections_parsing_eof() {
-        // Correct magic, correct version, 2 sections, zero section headers
-        let amxmodx_bin = vec![88, 88, 77, 65, 0, 3, 2];
-        let amxmodx_file = AmxmodxFile::try_from(amxmodx_bin).unwrap();
-        let result = amxmodx_file.sections();
-        assert!(result.is_err());
     }
 }
