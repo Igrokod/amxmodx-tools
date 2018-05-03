@@ -6,6 +6,8 @@ extern crate flate2;
 extern crate enum_primitive;
 #[macro_use]
 extern crate log;
+#[macro_use]
+extern crate failure;
 pub mod util;
 pub mod amxmodx;
 pub mod amxmod;
