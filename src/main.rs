@@ -9,6 +9,7 @@ use rxxma::amxmod::Plugin as AmxPlugin;
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
+use rxxma::util::TryFrom;
 use std::fs::File;
 use std::io::prelude::*;
 
@@ -40,7 +41,7 @@ fn read_from_file(file_path: &str) -> Result<Vec<u8>, String> {
 fn read_32bit_section(file_path: &str) -> Result<AmxPlugin, String> {
     let file_contents = read_from_file(file_path)?;
 
-    let amxmodx_file = AmxmodxFile::from(&file_contents)?;
+    let amxmodx_file = AmxmodxFile::try_from(&file_contents)?;
     let sections = amxmodx_file.sections()?;
 
     let section_32bit = sections.into_iter().find(|ref s| s.cellsize == 4).ok_or(
