@@ -1,6 +1,6 @@
 use super::AMXX_HEADER_SIZE;
 use super::File;
-use super::Section;
+use super::super::Section;
 
 impl File {
     pub fn sections(&self) -> Result<Vec<Section>, &str> {
@@ -25,7 +25,7 @@ impl File {
 #[cfg(test)]
 mod tests {
     use super::File as AmxmodxFile;
-    use super::super::Section;
+    use super::super::super::Section;
     use std::fs::File;
     use std::io::prelude::*;
     use util::try_from::TryFrom;
