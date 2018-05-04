@@ -91,7 +91,7 @@ impl Section {
         }
 
         // TODO: test
-        let plugin = Plugin::from(&amx_bin);
+        let plugin = Plugin::from(amx_bin);
         plugin.map_err(|e| format_err!("{}", e))
     }
 }

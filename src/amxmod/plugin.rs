@@ -36,17 +36,19 @@ pub struct Plugin {
     pub bin: Vec<u8>,
 }
 
+const AMXMOD_MAGIC: u16 = 0xF1E0;
+const FILE_VERSION: u8 = 8;
+const AMX_VERSION: u8 = 8;
+pub const CELLSIZE: usize = 4;
+
 impl Plugin {
-    const AMXMOD_MAGIC: u16 = 0xF1E0;
-    const FILE_VERSION: u8 = 8;
-    const AMX_VERSION: u8 = 8;
-    pub const CELLSIZE: usize = 4;
+    pub fn from(bin: Vec<u8>) -> Result<Plugin, Error> {
+        let mut reader = Cursor::new(&bin);
 
-    pub fn from(bin: &[u8]) -> Result<Plugin, Error> {
-        let mut reader = Cursor::new(bin);
-
-        let size = reader.read_u32::<LittleEndian>().context("EOF on amx size")?;
-        trace!("size:\t{}", size);
+        {
+            let size = reader.read_u32::<LittleEndian>().context("EOF on amx size")?;
+            trace!("size:\t{}", size);
+        }
 
         // Magic
         {
@@ -54,8 +56,8 @@ impl Plugin {
             let magic = reader.read_u16::<LittleEndian>().context(
                 "EOF on amx magic",
             )?;
-            if magic != Plugin::AMXMOD_MAGIC {
-                Err(AmxParseError::InvalidMagic(Plugin::AMXMOD_MAGIC, magic))?;
+            if magic != AMXMOD_MAGIC {
+                Err(AmxParseError::InvalidMagic(AMXMOD_MAGIC, magic))?;
             }
             trace!("magic:\t0x{:X}", magic);
         }
@@ -64,9 +66,9 @@ impl Plugin {
         {
             // TODO: test
             let file_version = reader.read_u8().context("EOF on amx file version")?;
-            if file_version != Plugin::FILE_VERSION {
+            if file_version != FILE_VERSION {
                 Err(AmxParseError::InvalidFileVersion(
-                    Plugin::FILE_VERSION,
+                    FILE_VERSION,
                     file_version,
                 ))?;
             }
@@ -77,11 +79,8 @@ impl Plugin {
         {
             // TODO: Test incorrect
             let amx_version = reader.read_u8().context("EOF on amx version")?;
-            if amx_version != Plugin::AMX_VERSION {
-                Err(AmxParseError::InvalidAmxVersion(
-                    Plugin::FILE_VERSION,
-                    amx_version,
-                ))?;
+            if amx_version != AMX_VERSION {
+                Err(AmxParseError::InvalidAmxVersion(AMX_VERSION, amx_version))?;
             }
             trace!("amx version:\t{}", amx_version);
         }
@@ -154,7 +153,7 @@ impl Plugin {
             pubvars: pubvars as usize,
             tags: tags as usize,
             nametable: nametable as usize,
-            bin: bin.to_vec(),
+            bin: bin.clone(),
         })
     }
 
@@ -246,7 +245,7 @@ impl Plugin {
         }
 
         let byte_slice: Vec<u8> = self.dat_slice()[addr..]
-            .chunks(Self::CELLSIZE)
+            .chunks(CELLSIZE)
             .map(|x| x[0])
             .take_while(|&x| x != 0)
             .collect();
@@ -293,7 +292,7 @@ mod tests {
     #[test]
     fn it_load_plugins_when_it_is_correct() {
         let amxmod_bin = load_fixture("simple.amx183");
-        let extracted_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let extracted_plugin = Plugin::from(amxmod_bin.clone()).unwrap();
         let expected_plugin = Plugin {
             flags: 2,
             defsize: 8,
@@ -316,14 +315,14 @@ mod tests {
     #[test]
     fn it_read_opcodes() {
         let amxmod_bin = load_fixture("simple.amx183");
-        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let amxmod_plugin = Plugin::from(amxmod_bin).unwrap();
         amxmod_plugin.opcodes().unwrap();
     }
 
     #[test]
     fn it_read_natives() {
         let amxmod_bin = load_fixture("two_natives.amx183");
-        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let amxmod_plugin = Plugin::from(amxmod_bin).unwrap();
         let natives = amxmod_plugin.natives();
         let expected_natives = [
             Native {
@@ -342,7 +341,7 @@ mod tests {
     #[test]
     fn it_read_publics() {
         let amxmod_bin = load_fixture("two_natives.amx183");
-        let amxmod_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let amxmod_plugin = Plugin::from(amxmod_bin).unwrap();
         let publics = amxmod_plugin.publics();
         let expected_publics = [
             Public {
@@ -357,7 +356,7 @@ mod tests {
     #[test]
     fn it_read_constant_by_addr() {
         let amxmod_bin = load_fixture("cell_constants.amx183");
-        let amx_plugin = Plugin::from(&amxmod_bin).unwrap();
+        let amx_plugin = Plugin::from(amxmod_bin).unwrap();
         let resp = amx_plugin.read_constant_auto_type(0);
         assert_eq!("simple plugin", resp.unwrap().into_string().unwrap());
     }

@@ -3,6 +3,7 @@ use super::Plugin as AstPlugin;
 use super::TreeElementType;
 use super::TreeElementType::*;
 use super::function_call::{Argument, FunctionCall};
+use super::super::amxmod::CELLSIZE;
 use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
 use super::super::amxmod::Plugin as AmxPlugin;
@@ -174,7 +175,7 @@ impl Decompiler {
                             continue;
                         }
 
-                        opcode.param.unwrap() as usize / AmxPlugin::CELLSIZE
+                        opcode.param.unwrap() as usize / CELLSIZE
                     };
 
                     // Sysreq.c (current) - PUSH.c with args count - args count
