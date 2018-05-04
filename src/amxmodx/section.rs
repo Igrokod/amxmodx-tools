@@ -3,6 +3,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use flate2::read::ZlibDecoder;
 use std::io::{Cursor, Read, Seek, SeekFrom};
+use util::TryFrom;
 
 #[derive(Debug, PartialEq)]
 pub struct Section {
@@ -91,7 +92,7 @@ impl Section {
         }
 
         // TODO: test
-        let plugin = Plugin::from(amx_bin);
+        let plugin = Plugin::try_from(amx_bin);
         plugin.map_err(|e| format_err!("{}", e))
     }
 }
