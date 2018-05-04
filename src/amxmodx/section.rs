@@ -1,11 +1,8 @@
 use super::super::amxmod::Plugin;
 use byteorder::{LittleEndian, ReadBytesExt};
-use failure::Error;
+use failure::{Error, ResultExt};
 use flate2::read::ZlibDecoder;
-use std::io::Cursor;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
+use std::io::{Cursor, Read, Seek, SeekFrom};
 
 #[derive(Debug, PartialEq)]
 pub struct Section {
@@ -17,70 +14,59 @@ pub struct Section {
     pub bin: Vec<u8>,
 }
 
+#[derive(Debug, Fail)]
+enum SectionParseError {
+    #[fail(display = "Invalid section cellsize, must be 4 or 8, got: {}", _0)]
+    InvalidCellSize(u8),
+    #[fail(display = "unexpected EOF on reading sections contents, disksize does not match")]
+    ContentsEof,
+    #[fail(display = "imagesize does not match section unpacked contents")]
+    ImageSizeMismatch,
+}
+
 impl Section {
     pub const SIZE: usize = 17; // Packed section size
 
-    pub fn from<'a>(bin: &'a [u8], section_header_offset: usize) -> Result<Section, Error> {
+    pub fn from(bin: &[u8], section_header_offset: usize) -> Result<Section, Error> {
         let mut reader = Cursor::new(bin);
-        // TODO: Error handling
         reader
             .seek(SeekFrom::Start(section_header_offset as u64))
-            .unwrap();
+            .context("EOF on offseting to section header (wtf?)")?;
 
-        let cellsize = match reader.read_u8() {
-            Ok(cs) => {
-                if !(cs == 4 || cs == 8) {
-                    return Err(format_err!(
-                        "Invalid section cellsize, must be 4 or 8, got: {}",
-                        cs
-                    ));
-                }
-
-                cs
-            }
-            Err(_) => return Err(format_err!("EOF on section cellsize")),
-        };
+        let cellsize = reader.read_u8().context("EOF on section cellsize")?;
+        if !(cellsize == 4 || cellsize == 8) {
+            Err(SectionParseError::InvalidCellSize(cellsize))?;
+        }
         trace!("cellsize:\t{}", cellsize);
 
-        let disksize = match reader.read_u32::<LittleEndian>() {
-            Ok(ds) => ds,
-            Err(_) => return Err(format_err!("EOF on section disksize")),
-        };
+        let disksize = reader.read_u32::<LittleEndian>().context(
+            "EOF on section disksize",
+        )?;
         trace!("disksize:\t{}", disksize);
 
-        let imagesize = match reader.read_u32::<LittleEndian>() {
-            Ok(is) => is,
-            Err(_) => return Err(format_err!("EOF on section imagesize")),
-        };
+        let imagesize = reader.read_u32::<LittleEndian>().context(
+            "EOF on section imagesize",
+        )?;
         trace!("imagesize:\t{}", imagesize);
 
-        let memsize = match reader.read_u32::<LittleEndian>() {
-            Ok(ms) => ms,
-            Err(_) => return Err(format_err!("EOF on section memsize")),
-        };
+        let memsize = reader.read_u32::<LittleEndian>().context(
+            "EOF on section memsize",
+        )?;
         trace!("memsize:\t{}", memsize);
 
-        let offset = match reader.read_u32::<LittleEndian>() {
-            Ok(offs) => offs,
-            Err(_) => return Err(format_err!("EOF on section amx gz offset")),
-        };
+        let offset = reader.read_u32::<LittleEndian>().context(
+            "EOF on section offset",
+        )?;
         trace!("offset:\t{}", offset);
 
-        trace!("------");
-        trace!("bin size: {}", bin.len());
-        trace!("disk size: {}", disksize);
-        trace!("image size: {}", imagesize);
         let mut section_bin = vec![0; disksize as usize];
-        // TODO: Error handler
-        reader.seek(SeekFrom::Start(offset as u64)).unwrap();
-        // TODO: Error handler
-        reader.read_exact(&mut section_bin).unwrap();
-
-        // TODO: Check if necessary
-        // if let Err(_) = reader.read_exact(&mut section_bin) {
-        //     return Err("EOF on reading section contents");
-        // };
-        trace!("section contents saved");
+        reader.seek(SeekFrom::Start(offset as u64)).context(
+            "EOF on offseting to section contents",
+        )?;
+        reader.read_exact(&mut section_bin).context(
+            SectionParseError::ContentsEof,
+        )?;
+        trace!("section contents size match disksize");
 
         Ok(Section {
             cellsize: cellsize,
@@ -93,19 +79,18 @@ impl Section {
     }
 
     pub fn unpack_section(&self) -> Result<Plugin, Error> {
-        let mut amx_bin: Vec<u8> = vec![0; self.imagesize as usize];
+        let imagesize = self.imagesize as usize;
+        let mut amx_bin: Vec<u8> = Vec::with_capacity(imagesize);
         let reader = Cursor::new(&self.bin);
+        // TODO: test
+        ZlibDecoder::new(reader).read_to_end(&mut amx_bin)?;
 
-        match ZlibDecoder::new(reader).read_exact(&mut amx_bin) {
-            Ok(_) => (),
-            Err(_) => return Err(format_err!("amx gz unpack error")),
-        };
+        // TODO: test
+        if amx_bin.len() != imagesize {
+            Err(SectionParseError::ImageSizeMismatch)?;
+        }
 
-        // TODO: Check if check is really necessary
-        // if amx_bin.len() != self.imagesize as usize {
-        //     return Err("amx bin size does not match section imagesize");
-        // }
-
+        // TODO: test
         let plugin = Plugin::from(&amx_bin);
         plugin.map_err(|e| format_err!("{}", e))
     }
@@ -121,11 +106,8 @@ mod tests {
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();
-        {
-            let mut file = File::open(format!("test/fixtures/{}", filename)).unwrap();
-            file.read_to_end(&mut file_bin).unwrap();
-        }
-
+        let mut file = File::open(format!("test/fixtures/{}", filename)).unwrap();
+        file.read_to_end(&mut file_bin).unwrap();
         file_bin
     }
 
@@ -238,7 +220,7 @@ mod tests {
                 .unwrap()
                 .cause()
                 .to_string(),
-            "EOF on section amx gz offset"
+            "EOF on section offset"
         );
     }
 
