@@ -3,6 +3,7 @@ use super::Opcode;
 use super::Public;
 use super::super::util::ReadByteString;
 use byteorder::{LittleEndian, ReadBytesExt};
+use failure::Error;
 use std::ffi::CString;
 use std::io::Cursor;
 use std::str;
@@ -31,12 +32,12 @@ impl Plugin {
     const AMX_VERSION: u8 = 8;
     pub const CELLSIZE: usize = 4;
 
-    pub fn from<'a>(bin: &[u8]) -> Result<Plugin, &'a str> {
+    pub fn from(bin: &[u8]) -> Result<Plugin, Error> {
         let mut reader = Cursor::new(bin);
 
         let size = match reader.read_u32::<LittleEndian>() {
             Ok(s) => s,
-            Err(_) => return Err("EOF on amx size"),
+            Err(_) => return Err(format_err!("EOF on amx size")),
         };
         trace!("size:\t{}", size);
 
@@ -45,11 +46,11 @@ impl Plugin {
             Ok(m) => {
                 trace!("magic:\t0x{:X}", m);
                 if m != Plugin::AMXMOD_MAGIC {
-                    return Err("Invalid Amxmod magic");
+                    return Err(format_err!("Invalid Amxmod magic"));
                 }
                 m
             }
-            Err(_) => return Err("EOF on amx magic"),
+            Err(_) => return Err(format_err!("EOF on amx magic")),
         };
 
         // TODO: Test incorrect
@@ -57,11 +58,11 @@ impl Plugin {
             Ok(v) => {
                 trace!("file version {}", v);
                 if v != Plugin::FILE_VERSION {
-                    return Err("Invalid file version");
+                    return Err(format_err!("Invalid file version"));
                 }
                 v
             }
-            Err(_) => return Err("EOF on amx file version"),
+            Err(_) => return Err(format_err!("EOF on amx file version")),
         };
 
         // TODO: Test incorrect
@@ -69,88 +70,88 @@ impl Plugin {
             Ok(v) => {
                 trace!("amx version:\t{}", v);
                 if v != Plugin::AMX_VERSION {
-                    return Err("Invalid amx version");
+                    return Err(format_err!("Invalid amx version"));
                 }
                 v
             }
-            Err(_) => return Err("EOF on amx version"),
+            Err(_) => return Err(format_err!("EOF on amx version")),
         };
 
         // TODO: Parse flags
         let flags = match reader.read_u16::<LittleEndian>() {
             Ok(f) => f,
-            Err(_) => return Err("EOF on amx flags"),
+            Err(_) => return Err(format_err!("EOF on amx flags")),
         };
 
         let defsize = match reader.read_u16::<LittleEndian>() {
             Ok(ds) => ds,
-            Err(_) => return Err("EOF on amx defsize"),
+            Err(_) => return Err(format_err!("EOF on amx defsize")),
         };
         trace!("defsize:\t{}", defsize);
 
         let cod = match reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
-            Err(_) => return Err("EOF on amx cod"),
+            Err(_) => return Err(format_err!("EOF on amx cod")),
         };
         trace!("cod:\t0x{:X}", cod);
 
         let dat = match reader.read_u32::<LittleEndian>() {
             Ok(d) => d,
-            Err(_) => return Err("EOF on amx dat"),
+            Err(_) => return Err(format_err!("EOF on amx dat")),
         };
         trace!("dat:\t0x{:X}", dat);
 
         let hea = match reader.read_u32::<LittleEndian>() {
             Ok(h) => h,
-            Err(_) => return Err("EOF on amx hea"),
+            Err(_) => return Err(format_err!("EOF on amx hea")),
         };
         trace!("hea:\t0x{:X}", hea);
 
         let stp = match reader.read_u32::<LittleEndian>() {
             Ok(s) => s,
-            Err(_) => return Err("EOF on amx stp"),
+            Err(_) => return Err(format_err!("EOF on amx stp")),
         };
         trace!("stp:\t0x{:X}", stp);
 
         let cip = match reader.read_u32::<LittleEndian>() {
             Ok(c) => c,
-            Err(_) => return Err("EOF on amx cip"),
+            Err(_) => return Err(format_err!("EOF on amx cip")),
         };
         trace!("cip:\t0x{:X}", cip);
 
         let publics = match reader.read_u32::<LittleEndian>() {
             Ok(p) => p,
-            Err(_) => return Err("EOF on amx publics"),
+            Err(_) => return Err(format_err!("EOF on amx publics")),
         };
         trace!("publics:\t0x{:X}", publics);
 
         let natives = match reader.read_u32::<LittleEndian>() {
             Ok(n) => n,
-            Err(_) => return Err("EOF on amx natives"),
+            Err(_) => return Err(format_err!("EOF on amx natives")),
         };
         trace!("natives:\t0x{:X}", natives);
 
         let libraries = match reader.read_u32::<LittleEndian>() {
             Ok(l) => l,
-            Err(_) => return Err("EOF on amx libraries"),
+            Err(_) => return Err(format_err!("EOF on amx libraries")),
         };
         trace!("libraries:\t0x{:X}", libraries);
 
         let pubvars = match reader.read_u32::<LittleEndian>() {
             Ok(p) => p,
-            Err(_) => return Err("EOF on amx pubvars"),
+            Err(_) => return Err(format_err!("EOF on amx pubvars")),
         };
         trace!("pubvars:\t0x{:X}", pubvars);
 
         let tags = match reader.read_u32::<LittleEndian>() {
             Ok(t) => t,
-            Err(_) => return Err("EOF on amx tags"),
+            Err(_) => return Err(format_err!("EOF on amx tags")),
         };
         trace!("tags:\t0x{:X}", tags);
 
         let nametable = match reader.read_u32::<LittleEndian>() {
             Ok(n) => n,
-            Err(_) => return Err("EOF on amx nametable"),
+            Err(_) => return Err(format_err!("EOF on amx nametable")),
         };
         trace!("nametable:\t0x{:X}", nametable);
 
