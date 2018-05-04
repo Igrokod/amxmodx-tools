@@ -10,8 +10,9 @@ impl File {
             trace!("---------------");
             trace!("Reading section {}", i + 1);
             let section_offset = AMXX_HEADER_SIZE + (Section::SIZE * i as usize);
-            let section_bin = &self.bin[section_offset..];
-            let section = match Section::from(section_bin) {
+            // TODO: Fix panic
+            // let section_bin = &self.bin[section_offset..];
+            let section = match Section::from(&self.bin, section_offset) {
                 Ok(s) => s,
                 Err(e) => return Err(e),
             };
@@ -52,6 +53,7 @@ mod tests {
                 imagesize: 288,
                 memsize: 16672,
                 offset: 41,
+                bin: load_fixture("raw_sections/simple.amxx181_cell4.gz"),
             },
             Section {
                 cellsize: 8,
@@ -59,6 +61,7 @@ mod tests {
                 imagesize: 488,
                 memsize: 33256,
                 offset: 202,
+                bin: load_fixture("raw_sections/simple.amxx181_cell8.gz"),
             },
         ];
         assert_eq!(extracted_sections, expected_sections);

@@ -3,6 +3,8 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use flate2::read::ZlibDecoder;
 use std::io::Cursor;
 use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::str;
 
 #[derive(Debug, PartialEq)]
@@ -12,13 +14,18 @@ pub struct Section {
     pub imagesize: u32,
     pub memsize: u32,
     pub offset: usize,
+    pub bin: Vec<u8>,
 }
 
 impl Section {
     pub const SIZE: usize = 17; // Packed section size
 
-    pub fn from(bin: &[u8]) -> Result<Section, &str> {
+    pub fn from<'a>(bin: &'a [u8], section_header_offset: usize) -> Result<Section, &str> {
         let mut reader = Cursor::new(bin);
+        // TODO: Error handling
+        reader
+            .seek(SeekFrom::Start(section_header_offset as u64))
+            .unwrap();
 
         let cellsize = match reader.read_u8() {
             Ok(cs) => {
@@ -56,27 +63,49 @@ impl Section {
         };
         trace!("offset:\t{}", offset);
 
+        trace!("------");
+        trace!("bin size: {}", bin.len());
+        trace!("disk size: {}", disksize);
+        trace!("image size: {}", imagesize);
+        // TODO: Check readed size
+        let mut section_bin = vec![0; disksize as usize];
+        // let mut section_bin = Vec::new();
+        // TODO: Error handler
+        reader.seek(SeekFrom::Start(offset as u64)).unwrap();
+        // TODO: Error handler
+        // TODO: Correct size read
+        reader.read_exact(&mut section_bin).unwrap();
+
+        // TODO: Check if necessary
+        // if let Err(_) = reader.read_exact(&mut section_bin) {
+        //     return Err("EOF on reading section contents");
+        // };
+        trace!("section contents saved");
+
         Ok(Section {
             cellsize: cellsize,
             disksize: disksize,
             imagesize: imagesize,
             memsize: memsize,
             offset: offset as usize,
+            bin: section_bin,
         })
     }
 
-    pub fn unpack_section<'a>(&self, bin: &[u8]) -> Result<Plugin, &'a str> {
-        let gzip_slice = &bin[self.offset..];
-        let mut amx_bin: Vec<u8> = Vec::new();
+    pub fn unpack_section<'a>(&self) -> Result<Plugin, &'a str> {
+        let mut amx_bin: Vec<u8> = vec![0; self.imagesize as usize];
+        // let mut amx_bin: Vec<u8> = Vec::new();
+        let reader = Cursor::new(&self.bin);
 
-        match ZlibDecoder::new(gzip_slice).read_to_end(&mut amx_bin) {
+        match ZlibDecoder::new(reader).read_exact(&mut amx_bin) {
             Ok(_) => (),
             Err(_) => return Err("amx gz unpack error"),
         };
 
-        if amx_bin.len() != self.imagesize as usize {
-            return Err("amx bin size does not match section imagesize");
-        }
+        // TODO: Check if check is really necessary
+        // if amx_bin.len() != self.imagesize as usize {
+        //     return Err("amx bin size does not match section imagesize");
+        // }
 
         let plugin = Plugin::from(&amx_bin);
         plugin
@@ -106,17 +135,15 @@ mod tests {
         // File with single section.
         let amxmodx_bin = load_fixture("simple.amxx183");
         // Skip amxmodx header, leaving only section headers
-        let section_bin = &amxmodx_bin[AMXX_HEADER_SIZE..];
-        assert!(Section::from(section_bin).is_ok());
+        assert!(Section::from(&amxmodx_bin, AMXX_HEADER_SIZE).is_ok());
     }
 
     #[test]
     fn it_unpack_section_without_errors() {
         // File with single section.
         let amxmodx_bin = load_fixture("simple.amxx183");
-        let section_bin = &amxmodx_bin[AMXX_HEADER_SIZE..];
-        let section = Section::from(section_bin).unwrap();
-        section.unpack_section(&amxmodx_bin).unwrap();
+        let section = Section::from(&amxmodx_bin, AMXX_HEADER_SIZE).unwrap();
+        section.unpack_section().unwrap();
     }
 
     #[test]
@@ -124,7 +151,7 @@ mod tests {
         // empty section header
         let section_bin = vec![];
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "EOF on section cellsize"
         );
     }
@@ -134,7 +161,7 @@ mod tests {
         // invalid cellsize
         let section_bin = vec![0];
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "Invalid section cellsize, must be 4 or 8"
         );
     }
@@ -145,7 +172,7 @@ mod tests {
         // empty disksize
         let section_bin = vec![4];
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "EOF on section disksize"
         );
     }
@@ -158,7 +185,7 @@ mod tests {
         let mut section_bin = vec![4, 0, 0, 0, 0];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "EOF on section imagesize"
         );
     }
@@ -172,7 +199,7 @@ mod tests {
         let mut section_bin = vec![0; 9];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "EOF on section memsize"
         );
     }
@@ -187,7 +214,7 @@ mod tests {
         let mut section_bin = vec![0; 13];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin).err().unwrap(),
+            Section::from(&section_bin, 0).err().unwrap(),
             "EOF on section amx gz offset"
         );
     }
@@ -201,15 +228,15 @@ mod tests {
         // 4 offset
         let mut section_bin = vec![0; 17];
         section_bin[0] = 4;
-        let extracted_section = Section::from(&section_bin);
-        assert!(extracted_section.is_ok());
+        let extracted_section = Section::from(&section_bin, 0).unwrap();
         let expected_section = Section {
             cellsize: 4,
             disksize: 0,
             imagesize: 0,
             memsize: 0,
             offset: 0,
+            bin: vec![],
         };
-        assert_eq!(extracted_section.unwrap(), expected_section);
+        assert_eq!(extracted_section, expected_section);
     }
 }

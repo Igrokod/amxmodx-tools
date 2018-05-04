@@ -52,9 +52,7 @@ fn read_32bit_section(file_path: PathBuf) -> Result<AmxPlugin, String> {
     trace!("-------------------------------------------");
     trace!(" Reading amxmod plugin from 32 bit section ");
     trace!("-------------------------------------------");
-    section_32bit.unpack_section(&file_contents).map_err(|e| {
-        e.to_string()
-    })
+    section_32bit.unpack_section().map_err(|e| e.to_string())
 }
 
 fn decompile(file_path: PathBuf) -> Result<String, String> {

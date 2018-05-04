@@ -1,5 +1,3 @@
-
-
 use super::File;
 use super::super::super::util::TryFrom;
 use failure::Error;
