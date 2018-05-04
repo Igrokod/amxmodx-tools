@@ -6,6 +6,7 @@ const MAGIC: u32 = 0x414d5858;
 const COMPATIBLE_VERSION: u16 = 768;
 const AMXX_HEADER_SIZE: usize = 7;
 
+#[derive(Debug)]
 pub struct File {
     pub bin: Vec<u8>,
     pub sections: u8,
