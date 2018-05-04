@@ -1,11 +1,11 @@
 use super::super::amxmod::Plugin;
 use byteorder::{LittleEndian, ReadBytesExt};
+use failure::Error;
 use flate2::read::ZlibDecoder;
 use std::io::Cursor;
 use std::io::Read;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::str;
 
 #[derive(Debug, PartialEq)]
 pub struct Section {
@@ -20,7 +20,7 @@ pub struct Section {
 impl Section {
     pub const SIZE: usize = 17; // Packed section size
 
-    pub fn from<'a>(bin: &'a [u8], section_header_offset: usize) -> Result<Section, &str> {
+    pub fn from<'a>(bin: &'a [u8], section_header_offset: usize) -> Result<Section, Error> {
         let mut reader = Cursor::new(bin);
         // TODO: Error handling
         reader
@@ -30,36 +30,39 @@ impl Section {
         let cellsize = match reader.read_u8() {
             Ok(cs) => {
                 if !(cs == 4 || cs == 8) {
-                    return Err("Invalid section cellsize, must be 4 or 8");
+                    return Err(format_err!(
+                        "Invalid section cellsize, must be 4 or 8, got: {}",
+                        cs
+                    ));
                 }
 
                 cs
             }
-            Err(_) => return Err("EOF on section cellsize"),
+            Err(_) => return Err(format_err!("EOF on section cellsize")),
         };
         trace!("cellsize:\t{}", cellsize);
 
         let disksize = match reader.read_u32::<LittleEndian>() {
             Ok(ds) => ds,
-            Err(_) => return Err("EOF on section disksize"),
+            Err(_) => return Err(format_err!("EOF on section disksize")),
         };
         trace!("disksize:\t{}", disksize);
 
         let imagesize = match reader.read_u32::<LittleEndian>() {
             Ok(is) => is,
-            Err(_) => return Err("EOF on section imagesize"),
+            Err(_) => return Err(format_err!("EOF on section imagesize")),
         };
         trace!("imagesize:\t{}", imagesize);
 
         let memsize = match reader.read_u32::<LittleEndian>() {
             Ok(ms) => ms,
-            Err(_) => return Err("EOF on section memsize"),
+            Err(_) => return Err(format_err!("EOF on section memsize")),
         };
         trace!("memsize:\t{}", memsize);
 
         let offset = match reader.read_u32::<LittleEndian>() {
             Ok(offs) => offs,
-            Err(_) => return Err("EOF on section amx gz offset"),
+            Err(_) => return Err(format_err!("EOF on section amx gz offset")),
         };
         trace!("offset:\t{}", offset);
 
@@ -67,13 +70,10 @@ impl Section {
         trace!("bin size: {}", bin.len());
         trace!("disk size: {}", disksize);
         trace!("image size: {}", imagesize);
-        // TODO: Check readed size
         let mut section_bin = vec![0; disksize as usize];
-        // let mut section_bin = Vec::new();
         // TODO: Error handler
         reader.seek(SeekFrom::Start(offset as u64)).unwrap();
         // TODO: Error handler
-        // TODO: Correct size read
         reader.read_exact(&mut section_bin).unwrap();
 
         // TODO: Check if necessary
@@ -92,14 +92,13 @@ impl Section {
         })
     }
 
-    pub fn unpack_section<'a>(&self) -> Result<Plugin, &'a str> {
+    pub fn unpack_section(&self) -> Result<Plugin, Error> {
         let mut amx_bin: Vec<u8> = vec![0; self.imagesize as usize];
-        // let mut amx_bin: Vec<u8> = Vec::new();
         let reader = Cursor::new(&self.bin);
 
         match ZlibDecoder::new(reader).read_exact(&mut amx_bin) {
             Ok(_) => (),
-            Err(_) => return Err("amx gz unpack error"),
+            Err(_) => return Err(format_err!("amx gz unpack error")),
         };
 
         // TODO: Check if check is really necessary
@@ -108,7 +107,7 @@ impl Section {
         // }
 
         let plugin = Plugin::from(&amx_bin);
-        plugin
+        plugin.map_err(|e| format_err!("{}", e))
     }
 }
 
@@ -151,7 +150,11 @@ mod tests {
         // empty section header
         let section_bin = vec![];
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
             "EOF on section cellsize"
         );
     }
@@ -161,8 +164,12 @@ mod tests {
         // invalid cellsize
         let section_bin = vec![0];
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
-            "Invalid section cellsize, must be 4 or 8"
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
+            "Invalid section cellsize, must be 4 or 8, got: 0"
         );
     }
 
@@ -172,7 +179,11 @@ mod tests {
         // empty disksize
         let section_bin = vec![4];
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
             "EOF on section disksize"
         );
     }
@@ -185,7 +196,11 @@ mod tests {
         let mut section_bin = vec![4, 0, 0, 0, 0];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
             "EOF on section imagesize"
         );
     }
@@ -199,7 +214,11 @@ mod tests {
         let mut section_bin = vec![0; 9];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
             "EOF on section memsize"
         );
     }
@@ -214,7 +233,11 @@ mod tests {
         let mut section_bin = vec![0; 13];
         section_bin[0] = 4;
         assert_eq!(
-            Section::from(&section_bin, 0).err().unwrap(),
+            Section::from(&section_bin, 0)
+                .err()
+                .unwrap()
+                .cause()
+                .to_string(),
             "EOF on section amx gz offset"
         );
     }

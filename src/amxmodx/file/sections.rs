@@ -1,9 +1,10 @@
 use super::AMXX_HEADER_SIZE;
 use super::File;
 use super::super::Section;
+use failure::Error;
 
 impl File {
-    pub fn sections(&self) -> Result<Vec<Section>, &str> {
+    pub fn sections(&self) -> Result<Vec<Section>, Error> {
         let mut sections: Vec<Section> = vec![];
 
         for i in 0..self.sections {

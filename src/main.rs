@@ -32,7 +32,7 @@ fn str_to_err(e: &str) -> Error {
 
 fn read_32bit_section(file_path: PathBuf) -> Result<AmxPlugin, Error> {
     let amxmodx_file = AmxmodxFile::try_from(file_path)?;
-    let sections = amxmodx_file.sections().map_err(str_to_err)?;
+    let sections = amxmodx_file.sections()?;
 
     let section_32bit = sections
         .into_iter()
@@ -43,7 +43,7 @@ fn read_32bit_section(file_path: PathBuf) -> Result<AmxPlugin, Error> {
     trace!("-------------------------------------------");
     trace!(" Reading amxmod plugin from 32 bit section ");
     trace!("-------------------------------------------");
-    section_32bit.unpack_section().map_err(str_to_err)
+    section_32bit.unpack_section()
 }
 
 fn decompile(file_path: PathBuf) -> Result<String, Error> {
