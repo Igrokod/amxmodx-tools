@@ -29,7 +29,7 @@ impl Decompiler {
 
     pub fn opcodes_into_functions(&mut self) {
         trace!("Pack opcodes into functions");
-        let public_list = self.amx_plugin.publics();
+        let public_list = self.amx_plugin.publics().unwrap();
 
         let mut new_tree: Vec<TreeElementType> = vec![];
         let mut current_function: Option<AstFunction> = None;
@@ -126,7 +126,8 @@ impl Decompiler {
         trace!("Decompile native calls");
         let ast_plugin = &mut self.ast_plugin;
         let amx_plugin = &mut self.amx_plugin;
-        let natives = amx_plugin.natives();
+        // TODO: Error handling
+        let natives = amx_plugin.natives().unwrap();
 
         let functions: Vec<_> = ast_plugin
             .tree_elements

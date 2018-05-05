@@ -32,26 +32,34 @@ const AMX_VERSION: u8 = 8;
 pub const CELLSIZE: usize = 4;
 
 impl Plugin {
-    pub fn cod_slice(&self) -> Result<&[u8], Error> {
-        // FIXME: Error handling when cod does not match
-        // Calculate from start of next segment
-        trace!("---- Slicing cod");
-        trace!("cod starts at: {}", self.cod);
-        trace!("dat starts at: {}", self.dat);
-        let cod_size = self.dat - self.cod;
-        trace!("cod size: {}", cod_size);
-        trace!("bin size: {}", self.bin.len());
-        let cod_range = self.cod..(self.cod + cod_size);
-        trace!("final range: {:?}", cod_range);
+    fn cod_slice(&self) -> Result<&[u8], Error> {
+        self.bin.get(self.cod..self.dat).ok_or(format_err!(
+            "cod slice mismatch"
+        ))
+    }
 
-        self.bin.get(cod_range).ok_or(
-            format_err!("cod slice mismatch"),
+    fn dat_slice(&self) -> Result<&[u8], Error> {
+        self.bin.get(self.dat..self.hea).ok_or(format_err!(
+            "dat slice mismatch"
+        ))
+    }
+
+    fn publics_slice(&self) -> Result<&[u8], Error> {
+        self.bin.get(self.publics..self.natives).ok_or(format_err!(
+            "publics slice mismatch"
+        ))
+    }
+
+    fn natives_slice(&self) -> Result<&[u8], Error> {
+        self.bin.get(self.natives..self.libraries).ok_or(
+            format_err!(
+                "natives slice mismatch"
+            ),
         )
     }
 
     pub fn opcodes(&self) -> Result<Vec<Opcode>, Error> {
         let mut cod_reader = Cursor::new(self.cod_slice()?);
-        let mut opcodes: Vec<Opcode> = Vec::new();
 
         // Skip first two opcodes for some reason
         cod_reader.read_u32::<LittleEndian>().context(
@@ -61,6 +69,7 @@ impl Plugin {
             "EOF on second opcode skip",
         )?;
 
+        let mut opcodes: Vec<Opcode> = Vec::new();
         loop {
             match Opcode::read_from(&mut cod_reader) {
                 // TODO: Test all cases
@@ -73,9 +82,9 @@ impl Plugin {
         Ok(opcodes)
     }
 
-    pub fn natives(&self) -> Vec<Native> {
-        let slice = &self.bin[self.natives..self.libraries];
-        slice.chunks(8) // Take natives by native struct
+    pub fn natives(&self) -> Result<Vec<Native>, Error> {
+        let slice = self.natives_slice().unwrap();
+        let result = slice.chunks(8) // Take natives by native struct
            .map(|n_struct| {
                // FIXME: Error handling
                let mut address = &n_struct[0..4];
@@ -88,12 +97,13 @@ impl Plugin {
                    name: name,
                    address: address,
                }
-           }).collect()
+           }).collect();
+        Ok(result)
     }
 
-    pub fn publics(&self) -> Vec<Public> {
-        let slice = &self.bin[self.publics..self.natives];
-        slice.chunks(8) // Take natives by native struct
+    pub fn publics(&self) -> Result<Vec<Public>, Error> {
+        let slice = self.publics_slice()?;
+        let result = slice.chunks(8) // Take natives by native struct
            .map(|n_struct| {
                // FIXME: Error handling
                let mut address = &n_struct[0..4];
@@ -106,19 +116,12 @@ impl Plugin {
                    name: name,
                    address: address,
                }
-           }).collect()
-    }
-
-    fn dat_size(&self) -> usize {
-        self.hea - self.dat
-    }
-
-    fn dat_slice(&self) -> &[u8] {
-        &self.bin[self.dat..(self.dat + self.dat_size())]
+           }).collect();
+        Ok(result)
     }
 
     fn is_addr_in_dat(&self, addr: usize) -> bool {
-        addr <= self.dat_size()
+        addr <= (self.hea - self.dat)
     }
 
     pub fn read_constant_auto_type(&self, addr: usize) -> Result<CString, &str> {
@@ -126,7 +129,8 @@ impl Plugin {
             return Err("Invalid constant addr");
         }
 
-        let byte_slice: Vec<u8> = self.dat_slice()[addr..]
+        // TODO: Error handling
+        let byte_slice: Vec<u8> = self.dat_slice().unwrap()[addr..]
             .chunks(CELLSIZE)
             .map(|x| x[0])
             .take_while(|&x| x != 0)
@@ -172,7 +176,7 @@ mod tests {
     fn it_read_natives() {
         let amxmod_bin = load_fixture("two_natives.amx183");
         let amxmod_plugin = Plugin::try_from(amxmod_bin).unwrap();
-        let natives = amxmod_plugin.natives();
+        let natives = amxmod_plugin.natives().unwrap();
         let expected_natives = [
             Native {
                 name: CString::new("native_one").unwrap(),
@@ -191,7 +195,7 @@ mod tests {
     fn it_read_publics() {
         let amxmod_bin = load_fixture("two_natives.amx183");
         let amxmod_plugin = Plugin::try_from(amxmod_bin).unwrap();
-        let publics = amxmod_plugin.publics();
+        let publics = amxmod_plugin.publics().unwrap();
         let expected_publics = [
             Public {
                 name: CString::new("func").unwrap(),
