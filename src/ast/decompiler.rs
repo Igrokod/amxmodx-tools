@@ -230,6 +230,7 @@ impl Decompiler {
                             amx_plugin.read_constant_auto_type(addr as usize).unwrap()
                         })
                         .map(|constant| Argument::from(constant))
+                        .rev()
                         .collect();
 
                     let native_index = sysreq_opcode.param.unwrap() as usize;
