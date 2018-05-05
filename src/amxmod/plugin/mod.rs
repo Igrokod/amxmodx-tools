@@ -3,6 +3,7 @@ mod try_from_vec_u8;
 use super::{Native, Opcode, Public};
 use super::super::util::ReadByteString;
 use byteorder::{LittleEndian, ReadBytesExt};
+use failure::{Error, ResultExt};
 use std::ffi::CString;
 use std::io::Cursor;
 use std::str;
@@ -31,7 +32,7 @@ const AMX_VERSION: u8 = 8;
 pub const CELLSIZE: usize = 4;
 
 impl Plugin {
-    pub fn cod_slice(&self) -> &[u8] {
+    pub fn cod_slice(&self) -> Result<&[u8], Error> {
         // FIXME: Error handling when cod does not match
         // Calculate from start of next segment
         trace!("---- Slicing cod");
@@ -40,25 +41,32 @@ impl Plugin {
         let cod_size = self.dat - self.cod;
         trace!("cod size: {}", cod_size);
         trace!("bin size: {}", self.bin.len());
-        trace!("final range: {}-{}", self.cod, self.cod + cod_size);
-        &self.bin[self.cod..(self.cod + cod_size)]
+        let cod_range = self.cod..(self.cod + cod_size);
+        trace!("final range: {:?}", cod_range);
+
+        self.bin.get(cod_range).ok_or(
+            format_err!("cod slice mismatch"),
+        )
     }
 
-    pub fn opcodes(&self) -> Result<Vec<Opcode>, &str> {
-        let mut cod_reader = Cursor::new(self.cod_slice());
+    pub fn opcodes(&self) -> Result<Vec<Opcode>, Error> {
+        let mut cod_reader = Cursor::new(self.cod_slice()?);
         let mut opcodes: Vec<Opcode> = Vec::new();
 
-        // FIXME: Error handling
         // Skip first two opcodes for some reason
-        cod_reader.read_u32::<LittleEndian>().unwrap();
-        cod_reader.read_u32::<LittleEndian>().unwrap();
+        cod_reader.read_u32::<LittleEndian>().context(
+            "EOF on first opcode skip",
+        )?;
+        cod_reader.read_u32::<LittleEndian>().context(
+            "EOF on second opcode skip",
+        )?;
 
         loop {
             match Opcode::read_from(&mut cod_reader) {
-                // FIXME: Test all cases
+                // TODO: Test all cases
                 Ok(Some(o)) => opcodes.extend(o),
                 Ok(None) => break,
-                Err(e) => return Err(e),
+                Err(e) => return Err(format_err!("{}", e)),
             }
         }
 
