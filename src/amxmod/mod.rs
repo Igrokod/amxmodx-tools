@@ -1,4 +1,4 @@
-mod plugin;
+pub mod plugin;
 mod opcode_type;
 mod opcode;
 mod native;

@@ -8,6 +8,11 @@ use std::ffi::CString;
 use std::io::Cursor;
 use std::str;
 
+pub enum ConstantParam {
+    Cell(u32),
+    String(CString),
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Plugin {
     flags: u16,
@@ -120,13 +125,9 @@ impl Plugin {
         Ok(result)
     }
 
-    fn is_addr_in_dat(&self, addr: usize) -> bool {
-        addr <= (self.hea - self.dat)
-    }
-
-    pub fn read_constant_auto_type(&self, addr: usize) -> Result<CString, &str> {
-        if !self.is_addr_in_dat(addr) {
-            return Err("Invalid constant addr");
+    pub fn read_constant_auto_type(&self, addr: usize) -> Result<ConstantParam, &str> {
+        if !(addr <= (self.hea - self.dat)) {
+            return Ok(ConstantParam::Cell(addr as u32));
         }
 
         // TODO: Error handling
@@ -136,12 +137,14 @@ impl Plugin {
             .take_while(|&x| x != 0)
             .collect();
 
-        Ok(CString::new(byte_slice).unwrap())
+        let string = CString::new(byte_slice).unwrap();
+        Ok(ConstantParam::String(string))
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use super::ConstantParam;
     use super::Native;
     use super::Plugin;
     use super::Public;
@@ -207,10 +210,26 @@ mod tests {
     }
 
     #[test]
-    fn it_read_constant_by_addr() {
+    fn it_read_string_by_addr() {
         let amxmod_bin = load_fixture("cell_constants.amx183");
         let amx_plugin = Plugin::try_from(amxmod_bin).unwrap();
-        let resp = amx_plugin.read_constant_auto_type(0);
-        assert_eq!("simple plugin", resp.unwrap().into_string().unwrap());
+        let string = match amx_plugin.read_constant_auto_type(0).unwrap() {
+            ConstantParam::String(s) => s,
+            _ => panic!("invalid result"),
+        };
+
+        assert_eq!("simple plugin", string.into_string().unwrap());
+    }
+
+    #[test]
+    fn it_read_cell_by_addr() {
+        let amxmod_bin = load_fixture("cell_constants.amx183");
+        let amx_plugin = Plugin::try_from(amxmod_bin).unwrap();
+        let number = match amx_plugin.read_constant_auto_type(99999999).unwrap() {
+            ConstantParam::Cell(n) => n,
+            _ => panic!("invalid result"),
+        };
+
+        assert_eq!(99999999, number);
     }
 }

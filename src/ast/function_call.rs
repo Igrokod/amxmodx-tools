@@ -1,9 +1,21 @@
 use super::TreeElement;
+use amxmod::plugin::ConstantParam;
+use std::convert::From;
+use std::ffi::CString;
 
 #[derive(Debug, Clone)]
 pub enum Argument {
-    String(String),
+    String(CString),
     Cell(u32),
+}
+
+impl From<ConstantParam> for Argument {
+    fn from(constant: ConstantParam) -> Self {
+        match constant {
+            ConstantParam::Cell(v) => Argument::Cell(v),
+            ConstantParam::String(v) => Argument::String(v),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -24,8 +36,8 @@ impl TreeElement for FunctionCall {
             .unwrap_or(vec![])
             .into_iter()
             .map(|arg| match arg {
-                Argument::String(d) => format!("\"{}\"", d),
-                _ => String::from("unknown argument type formatting"),
+                Argument::String(s) => format!("{:?}", s),
+                Argument::Cell(n) => format!("{}", n),
             })
             .collect::<Vec<String>>()
             .join(", ");
