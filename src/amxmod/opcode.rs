@@ -52,8 +52,8 @@ impl Opcode {
 
         let opcode = Opcode {
             code: enum_code,
-            address: address as usize,
-            param: param,
+            address,
+            param,
         };
 
         if opcode.code == OP_SHL || opcode.code == OP_SSHR {
@@ -102,7 +102,7 @@ impl Opcode {
 
         let none_found_opcode = Opcode {
             code: OP_CASENONE,
-            address: address,
+            address,
             param: Some(none_found_param),
         };
         opcodes.push(none_found_opcode);
@@ -117,7 +117,7 @@ impl Opcode {
             trace!("CASE {}", case_param);
             let case_op = Opcode {
                 code: OP_CASE,
-                address: address,
+                address,
                 param: Some(case_param),
             };
             opcodes.push(case_op);
@@ -130,7 +130,7 @@ impl Opcode {
             trace!("CASEJMP {}", case_jmp_param);
             let case_jmp = Opcode {
                 code: OP_CASENONE,
-                address: address,
+                address,
                 param: Some(case_param),
             };
             opcodes.push(case_jmp);

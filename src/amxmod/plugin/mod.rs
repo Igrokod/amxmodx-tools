@@ -40,25 +40,25 @@ impl Plugin {
     fn cod_slice(&self) -> Result<&[u8], Error> {
         self.bin
             .get(self.cod..self.dat)
-            .ok_or(format_err!("cod slice mismatch"))
+            .ok_or_else(|| format_err!("cod slice mismatch"))
     }
 
     fn dat_slice(&self) -> Result<&[u8], Error> {
         self.bin
             .get(self.dat..self.hea)
-            .ok_or(format_err!("dat slice mismatch"))
+            .ok_or_else(|| format_err!("dat slice mismatch"))
     }
 
     fn publics_slice(&self) -> Result<&[u8], Error> {
         self.bin
             .get(self.publics..self.natives)
-            .ok_or(format_err!("publics slice mismatch"))
+            .ok_or_else(|| format_err!("publics slice mismatch"))
     }
 
     fn natives_slice(&self) -> Result<&[u8], Error> {
         self.bin
             .get(self.natives..self.libraries)
-            .ok_or(format_err!("natives slice mismatch"))
+            .ok_or_else(|| format_err!("natives slice mismatch"))
     }
 
     pub fn opcodes(&self) -> Result<Vec<Opcode>, Error> {
@@ -97,10 +97,7 @@ impl Plugin {
                 let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
                 let name = self.bin[name_offset..].read_string_zero().unwrap();
 
-                Native {
-                    name: name,
-                    address: address,
-                }
+                Native { name, address }
             })
             .collect();
         Ok(result)
@@ -118,17 +115,14 @@ impl Plugin {
                 let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
                 let name = self.bin[name_offset..].read_string_zero().unwrap();
 
-                Public {
-                    name: name,
-                    address: address,
-                }
+                Public { name, address }
             })
             .collect();
         Ok(result)
     }
 
     pub fn read_constant_auto_type(&self, addr: usize) -> Result<ConstantParam, &str> {
-        if !(addr <= (self.hea - self.dat)) {
+        if addr > (self.hea - self.dat) {
             return Ok(ConstantParam::Cell(addr as u32));
         }
 

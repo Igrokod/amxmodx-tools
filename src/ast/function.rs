@@ -39,19 +39,19 @@ impl Function {
         };
 
         let name = if let Some(p) = opcode_public {
-            String::from(format!("{}", p.name.to_str().unwrap()))
+            p.name.to_str().unwrap().to_string()
         } else {
             // I like to live dangerously
             unsafe {
                 STOCK_FUNCTION_COUNTER += 1;
-                String::from(format!("sub_{:x}", STOCK_FUNCTION_COUNTER - 1))
+                format!("sub_{:x}", STOCK_FUNCTION_COUNTER - 1)
             }
         };
 
         Function {
-            name: name,
+            name,
             tree_elements: vec![],
-            visibility: visibility,
+            visibility,
         }
     }
 }

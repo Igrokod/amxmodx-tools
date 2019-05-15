@@ -65,10 +65,7 @@ impl TryFrom<Vec<u8>> for File {
             sections
         };
 
-        Ok(File {
-            bin: bin,
-            sections: sections,
-        })
+        Ok(File { bin, sections })
     }
 }
 

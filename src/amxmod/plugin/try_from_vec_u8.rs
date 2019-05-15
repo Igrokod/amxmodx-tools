@@ -1,4 +1,7 @@
-use std::convert::TryFrom;
+// TODO: Fix clippy error
+#![allow(clippy::enum_variant_names)]
+
+use std::convert::{TryFrom, TryInto};
 use std::io::Cursor;
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -132,19 +135,19 @@ impl TryFrom<Vec<u8>> for Plugin {
         trace!("nametable:\t0x{:X}", nametable);
 
         Ok(Plugin {
-            flags: flags,
-            defsize: defsize,
-            cod: cod as usize,
-            dat: dat as usize,
-            hea: hea as usize,
-            stp: stp as usize,
-            cip: cip as usize,
-            publics: publics as usize,
-            natives: natives as usize,
-            libraries: libraries as usize,
-            pubvars: pubvars as usize,
-            tags: tags as usize,
-            nametable: nametable as usize,
+            flags,
+            defsize,
+            cod: cod.try_into().unwrap(),
+            dat: dat.try_into().unwrap(),
+            hea: hea.try_into().unwrap(),
+            stp: stp.try_into().unwrap(),
+            cip: cip.try_into().unwrap(),
+            publics: publics.try_into().unwrap(),
+            natives: natives.try_into().unwrap(),
+            libraries: libraries.try_into().unwrap(),
+            pubvars: pubvars.try_into().unwrap(),
+            tags: tags.try_into().unwrap(),
+            nametable: nametable.try_into().unwrap(),
             bin: bin.clone(),
         })
     }

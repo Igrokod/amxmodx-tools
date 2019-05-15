@@ -15,9 +15,7 @@ impl Plugin {
             tree_elements.push(OpcodeType(opcode));
         }
 
-        Ok(Plugin {
-            tree_elements: tree_elements,
-        })
+        Ok(Plugin { tree_elements })
     }
 }
 

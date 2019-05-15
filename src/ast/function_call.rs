@@ -34,7 +34,7 @@ impl TreeElement for FunctionCall {
         let args: String = self
             .args
             .clone()
-            .unwrap_or(vec![])
+            .unwrap_or_else(|| vec![])
             .into_iter()
             .map(|arg| match arg {
                 Argument::String(s) => format!("{:?}", s),

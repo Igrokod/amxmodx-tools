@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::io::{Cursor, Read, Seek, SeekFrom};
 
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -65,7 +65,7 @@ impl Section {
 
         let mut section_bin = vec![0; disksize as usize];
         reader
-            .seek(SeekFrom::Start(offset as u64))
+            .seek(SeekFrom::Start(offset.try_into().unwrap()))
             .context("EOF on offseting to section contents")?;
         reader
             .read_exact(&mut section_bin)
@@ -73,11 +73,11 @@ impl Section {
         trace!("section contents size match disksize");
 
         Ok(Section {
-            cellsize: cellsize,
-            disksize: disksize,
-            imagesize: imagesize,
-            memsize: memsize,
-            offset: offset as usize,
+            cellsize,
+            disksize,
+            imagesize,
+            memsize,
+            offset: offset.try_into().unwrap(),
             bin: section_bin,
         })
     }

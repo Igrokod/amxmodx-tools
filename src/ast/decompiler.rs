@@ -20,7 +20,7 @@ impl Decompiler {
         let opcodes = amx_plugin.opcodes().unwrap();
 
         Decompiler {
-            amx_plugin: amx_plugin,
+            amx_plugin,
             ast_plugin: AstPlugin::from(opcodes).unwrap(),
         }
     }
@@ -86,12 +86,12 @@ impl Decompiler {
         let functions: Vec<_> = ast_plugin
             .tree_elements
             .iter_mut()
-            .map(|e| match e {
-                &mut FunctionType(ref mut f) => Some(f),
+            .map(|e| match *e {
+                FunctionType(ref mut f) => Some(f),
                 _ => None,
             })
-            .filter(|e| e.is_some())
-            .map(|f| f.unwrap())
+            .filter(Option::is_some)
+            .map(Option::unwrap)
             .collect();
 
         for function in functions {
@@ -103,14 +103,9 @@ impl Decompiler {
                 addr += 1;
                 let position = addr - 1;
 
-                let opcode = {
-                    // Should never fail
-                    let element = current_tree.get(position).unwrap();
-
-                    match element {
-                        &OpcodeType(o) => o,
-                        _ => continue,
-                    }
+                let opcode = match current_tree[position] {
+                    OpcodeType(o) => o,
+                    _ => continue,
                 };
 
                 if opcode.code != OP_BREAK {
@@ -134,12 +129,12 @@ impl Decompiler {
         let functions: Vec<_> = ast_plugin
             .tree_elements
             .iter_mut()
-            .map(|e| match e {
-                &mut FunctionType(ref mut f) => Some(f),
+            .map(|e| match *e {
+                FunctionType(ref mut f) => Some(f),
                 _ => None,
             })
-            .filter(|e| e.is_some())
-            .map(|f| f.unwrap())
+            .filter(Option::is_some)
+            .map(Option::unwrap)
             .collect();
 
         for function in functions {
@@ -151,24 +146,19 @@ impl Decompiler {
                 addr += 1;
                 let mut position = addr - 1;
 
-                let opcode = {
-                    // Should never fail
-                    let element = current_tree.get(position).unwrap();
-
-                    match element {
-                        &OpcodeType(o) => o,
-                        _ => continue,
-                    }
+                let opcode = match current_tree[position] {
+                    OpcodeType(o) => o,
+                    _ => continue,
                 };
 
                 if opcode.code == OP_SYSREQ_C {
                     let sysreq_opcode = &opcode;
                     // Take previous PUSH.C to get args count
                     let native_arguments_count = {
-                        let element = current_tree.get(position - 1).unwrap();
+                        let element = &current_tree[position - 1];
 
                         let opcode = match element {
-                            &OpcodeType(o) => o,
+                            OpcodeType(o) => o,
                             _ => continue,
                         };
 
@@ -194,8 +184,8 @@ impl Decompiler {
                     addr -= 1;
                     position -= 1;
 
-                    let is_having_non_opcodes = raw_args.iter().any(|e| match e {
-                        &OpcodeType(_) => false,
+                    let is_having_non_opcodes = raw_args.iter().any(|e| match *e {
+                        OpcodeType(_) => false,
                         _ => true,
                     });
 
@@ -210,12 +200,12 @@ impl Decompiler {
 
                     let args_opcodes: Vec<Opcode> = raw_args
                         .iter()
-                        .map(|e| match e {
-                            &OpcodeType(o) => Some(o),
+                        .map(|e| match *e {
+                            OpcodeType(o) => Some(o),
                             _ => None,
                         })
-                        .filter(|e| e.is_some())
-                        .map(|o| o.unwrap().clone())
+                        .filter(Option::is_some)
+                        .map(Option::unwrap)
                         .collect();
 
                     let is_having_non_push_c_opcodes =
@@ -229,7 +219,7 @@ impl Decompiler {
                         .iter()
                         .map(|o| o.param.unwrap())
                         .map(|addr| amx_plugin.read_constant_auto_type(addr as usize).unwrap())
-                        .map(|constant| Argument::from(constant))
+                        .map(Argument::from)
                         .rev()
                         .collect();
 
@@ -254,7 +244,7 @@ impl Decompiler {
                             };
 
                             match element {
-                                &OpcodeType(o) => o,
+                                OpcodeType(o) => o,
                                 _ => break,
                             }
                         };
@@ -275,7 +265,7 @@ impl Decompiler {
                             };
 
                             match element {
-                                &OpcodeType(o) => o,
+                                OpcodeType(o) => o,
                                 _ => break,
                             }
                         };
@@ -296,7 +286,7 @@ impl Decompiler {
                             };
 
                             match element {
-                                &OpcodeType(o) => o,
+                                OpcodeType(o) => o,
                                 _ => break,
                             }
                         };
