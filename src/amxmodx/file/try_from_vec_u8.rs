@@ -1,8 +1,10 @@
-use super::super::super::util::TryFrom;
-use super::{File, COMPATIBLE_VERSION, MAGIC};
+use std::convert::TryFrom;
+use std::io::Cursor;
+
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::Error;
-use std::io::Cursor;
+
+use super::{File, COMPATIBLE_VERSION, MAGIC};
 
 impl TryFrom<Vec<u8>> for File {
     type Error = Error;
@@ -71,10 +73,11 @@ impl TryFrom<Vec<u8>> for File {
 
 #[cfg(test)]
 mod tests {
-    use super::File as AmxmodxFile;
-    use crate::util::try_from::TryFrom;
+    use std::convert::TryFrom;
     use std::fs::File;
     use std::io::prelude::*;
+
+    use super::File as AmxmodxFile;
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();

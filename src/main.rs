@@ -6,14 +6,16 @@ extern crate rxxma;
 #[macro_use]
 extern crate failure;
 
+use std::convert::TryFrom;
+use std::path::PathBuf;
+
 use clap::{App, Arg};
 use failure::Error;
+
 use rxxma::amxmod::Plugin as AmxPlugin;
 use rxxma::amxmodx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
-use rxxma::util::TryFrom;
-use std::path::PathBuf;
 
 macro_rules! die {
     ($fmt:expr) => ({

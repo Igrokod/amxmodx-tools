@@ -146,13 +146,14 @@ impl Plugin {
 
 #[cfg(test)]
 mod tests {
+    use std::convert::TryFrom;
+    use std::ffi::CString;
+
     use super::ConstantParam;
     use super::Native;
     use super::Plugin;
     use super::Public;
     use crate::util::tests::load_fixture;
-    use crate::util::try_from::TryFrom;
-    use std::ffi::CString;
 
     // TODO: Support amx extraction in programm itself
     // fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {

@@ -1,9 +1,11 @@
-use super::super::super::util::TryFrom;
-use super::File;
-use failure::Error;
+use std::convert::TryFrom;
 use std::fs::File as IoFile;
 use std::io::Read;
 use std::path::PathBuf;
+
+use failure::Error;
+
+use super::File;
 
 impl TryFrom<PathBuf> for File {
     type Error = Error;
@@ -19,9 +21,10 @@ impl TryFrom<PathBuf> for File {
 
 #[cfg(test)]
 mod tests {
-    use super::File as AmxmodxFile;
-    use crate::util::try_from::TryFrom;
+    use std::convert::TryFrom;
     use std::path::PathBuf;
+
+    use super::File as AmxmodxFile;
 
     #[test]
     fn it_try_from_file() {

@@ -1,8 +1,10 @@
-use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
-use crate::util::TryFrom;
+use std::convert::TryFrom;
+
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use std::io::Cursor;
+
+use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
 
 #[derive(Debug, Fail)]
 enum AmxParseError {
