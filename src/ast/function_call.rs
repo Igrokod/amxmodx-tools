@@ -31,7 +31,8 @@ impl TreeElement for FunctionCall {
         // Push ident
         source.push_str(&format!("{:>width$}", "", width = (2 * ident)));
 
-        let args: String = self.args
+        let args: String = self
+            .args
             .clone()
             .unwrap_or(vec![])
             .into_iter()

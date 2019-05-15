@@ -9,12 +9,12 @@ pub trait DebugU8 {
 impl DebugU8 for [u8] {
     fn printable(&self) -> String {
         self.iter()
-            .map(|&c| if c >= Self::PRINTABLE_RANGE.start &&
-                c <= Self::PRINTABLE_RANGE.end
-            {
-                format!("{}", char::from(c))
-            } else {
-                format!("\\x{:02x}", c)
+            .map(|&c| {
+                if c >= Self::PRINTABLE_RANGE.start && c <= Self::PRINTABLE_RANGE.end {
+                    format!("{}", char::from(c))
+                } else {
+                    format!("\\x{:02x}", c)
+                }
             })
             .collect()
     }

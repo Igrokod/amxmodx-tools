@@ -40,33 +40,33 @@ impl Section {
         }
         trace!("cellsize:\t{}", cellsize);
 
-        let disksize = reader.read_u32::<LittleEndian>().context(
-            "EOF on section disksize",
-        )?;
+        let disksize = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on section disksize")?;
         trace!("disksize:\t{}", disksize);
 
-        let imagesize = reader.read_u32::<LittleEndian>().context(
-            "EOF on section imagesize",
-        )?;
+        let imagesize = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on section imagesize")?;
         trace!("imagesize:\t{}", imagesize);
 
-        let memsize = reader.read_u32::<LittleEndian>().context(
-            "EOF on section memsize",
-        )?;
+        let memsize = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on section memsize")?;
         trace!("memsize:\t{}", memsize);
 
-        let offset = reader.read_u32::<LittleEndian>().context(
-            "EOF on section offset",
-        )?;
+        let offset = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on section offset")?;
         trace!("offset:\t{}", offset);
 
         let mut section_bin = vec![0; disksize as usize];
-        reader.seek(SeekFrom::Start(offset as u64)).context(
-            "EOF on offseting to section contents",
-        )?;
-        reader.read_exact(&mut section_bin).context(
-            SectionParseError::ContentsEof,
-        )?;
+        reader
+            .seek(SeekFrom::Start(offset as u64))
+            .context("EOF on offseting to section contents")?;
+        reader
+            .read_exact(&mut section_bin)
+            .context(SectionParseError::ContentsEof)?;
         trace!("section contents size match disksize");
 
         Ok(Section {

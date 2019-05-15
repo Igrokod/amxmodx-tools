@@ -1,11 +1,11 @@
-pub mod plugin;
-mod opcode_type;
-mod opcode;
 mod native;
+mod opcode;
+mod opcode_type;
+pub mod plugin;
 mod public;
 pub use self::native::Native;
 pub use self::opcode::Opcode;
 pub use self::opcode_type::*;
-pub use self::plugin::CELLSIZE;
 pub use self::plugin::Plugin;
+pub use self::plugin::CELLSIZE;
 pub use self::public::Public;

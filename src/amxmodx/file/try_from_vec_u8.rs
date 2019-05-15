@@ -1,5 +1,5 @@
-use super::{COMPATIBLE_VERSION, File, MAGIC};
 use super::super::super::util::TryFrom;
+use super::{File, COMPATIBLE_VERSION, MAGIC};
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::Error;
 use std::io::Cursor;

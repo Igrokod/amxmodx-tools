@@ -1,7 +1,7 @@
-use super::TreeElement;
-use super::TreeElementType;
 use super::super::amxmod::Opcode;
 use super::super::amxmod::Public;
+use super::TreeElement;
+use super::TreeElementType;
 use std::fmt;
 
 #[derive(PartialEq, Debug, Clone)]

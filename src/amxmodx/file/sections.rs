@@ -1,6 +1,6 @@
-use super::AMXX_HEADER_SIZE;
-use super::File;
 use super::super::Section;
+use super::File;
+use super::AMXX_HEADER_SIZE;
 use failure::Error;
 
 impl File {
@@ -26,8 +26,8 @@ impl File {
 
 #[cfg(test)]
 mod tests {
-    use super::File as AmxmodxFile;
     use super::super::super::Section;
+    use super::File as AmxmodxFile;
     use std::fs::File;
     use std::io::prelude::*;
     use util::try_from::TryFrom;

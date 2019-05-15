@@ -1,7 +1,7 @@
 mod try_from_vec_u8;
 
-use super::{Native, Opcode, Public};
 use super::super::util::ReadByteString;
+use super::{Native, Opcode, Public};
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use std::ffi::CString;
@@ -38,41 +38,39 @@ pub const CELLSIZE: usize = 4;
 
 impl Plugin {
     fn cod_slice(&self) -> Result<&[u8], Error> {
-        self.bin.get(self.cod..self.dat).ok_or(format_err!(
-            "cod slice mismatch"
-        ))
+        self.bin
+            .get(self.cod..self.dat)
+            .ok_or(format_err!("cod slice mismatch"))
     }
 
     fn dat_slice(&self) -> Result<&[u8], Error> {
-        self.bin.get(self.dat..self.hea).ok_or(format_err!(
-            "dat slice mismatch"
-        ))
+        self.bin
+            .get(self.dat..self.hea)
+            .ok_or(format_err!("dat slice mismatch"))
     }
 
     fn publics_slice(&self) -> Result<&[u8], Error> {
-        self.bin.get(self.publics..self.natives).ok_or(format_err!(
-            "publics slice mismatch"
-        ))
+        self.bin
+            .get(self.publics..self.natives)
+            .ok_or(format_err!("publics slice mismatch"))
     }
 
     fn natives_slice(&self) -> Result<&[u8], Error> {
-        self.bin.get(self.natives..self.libraries).ok_or(
-            format_err!(
-                "natives slice mismatch"
-            ),
-        )
+        self.bin
+            .get(self.natives..self.libraries)
+            .ok_or(format_err!("natives slice mismatch"))
     }
 
     pub fn opcodes(&self) -> Result<Vec<Opcode>, Error> {
         let mut cod_reader = Cursor::new(self.cod_slice()?);
 
         // Skip first two opcodes for some reason
-        cod_reader.read_u32::<LittleEndian>().context(
-            "EOF on first opcode skip",
-        )?;
-        cod_reader.read_u32::<LittleEndian>().context(
-            "EOF on second opcode skip",
-        )?;
+        cod_reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on first opcode skip")?;
+        cod_reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on second opcode skip")?;
 
         let mut opcodes: Vec<Opcode> = Vec::new();
         loop {
@@ -89,39 +87,43 @@ impl Plugin {
 
     pub fn natives(&self) -> Result<Vec<Native>, Error> {
         let slice = self.natives_slice().unwrap();
-        let result = slice.chunks(8) // Take natives by native struct
-           .map(|n_struct| {
-               // FIXME: Error handling
-               let mut address = &n_struct[0..4];
-               let address = address.read_u32::<LittleEndian>().unwrap() as usize;
-               let mut name_offset = &n_struct[4..8];
-               let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
-               let name = self.bin[name_offset..].read_string_zero().unwrap();
+        let result = slice
+            .chunks(8) // Take natives by native struct
+            .map(|n_struct| {
+                // FIXME: Error handling
+                let mut address = &n_struct[0..4];
+                let address = address.read_u32::<LittleEndian>().unwrap() as usize;
+                let mut name_offset = &n_struct[4..8];
+                let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
+                let name = self.bin[name_offset..].read_string_zero().unwrap();
 
-               Native {
-                   name: name,
-                   address: address,
-               }
-           }).collect();
+                Native {
+                    name: name,
+                    address: address,
+                }
+            })
+            .collect();
         Ok(result)
     }
 
     pub fn publics(&self) -> Result<Vec<Public>, Error> {
         let slice = self.publics_slice()?;
-        let result = slice.chunks(8) // Take natives by native struct
-           .map(|n_struct| {
-               // FIXME: Error handling
-               let mut address = &n_struct[0..4];
-               let address = address.read_u32::<LittleEndian>().unwrap() as usize;
-               let mut name_offset = &n_struct[4..8];
-               let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
-               let name = self.bin[name_offset..].read_string_zero().unwrap();
+        let result = slice
+            .chunks(8) // Take natives by native struct
+            .map(|n_struct| {
+                // FIXME: Error handling
+                let mut address = &n_struct[0..4];
+                let address = address.read_u32::<LittleEndian>().unwrap() as usize;
+                let mut name_offset = &n_struct[4..8];
+                let name_offset = name_offset.read_u32::<LittleEndian>().unwrap() as usize;
+                let name = self.bin[name_offset..].read_string_zero().unwrap();
 
-               Public {
-                   name: name,
-                   address: address,
-               }
-           }).collect();
+                Public {
+                    name: name,
+                    address: address,
+                }
+            })
+            .collect();
         Ok(result)
     }
 
@@ -199,12 +201,10 @@ mod tests {
         let amxmod_bin = load_fixture("two_natives.amx183");
         let amxmod_plugin = Plugin::try_from(amxmod_bin).unwrap();
         let publics = amxmod_plugin.publics().unwrap();
-        let expected_publics = [
-            Public {
-                name: CString::new("func").unwrap(),
-                address: 8,
-            },
-        ];
+        let expected_publics = [Public {
+            name: CString::new("func").unwrap(),
+            address: 8,
+        }];
 
         assert_eq!(publics, expected_publics);
     }

@@ -1,8 +1,8 @@
-mod tree_element;
-mod function;
-mod plugin;
-mod function_call;
 mod decompiler;
+mod function;
+mod function_call;
+mod plugin;
+mod tree_element;
 
 pub use self::decompiler::Decompiler;
 pub use self::function::*;

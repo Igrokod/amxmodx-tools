@@ -1,6 +1,6 @@
+use super::super::amxmod::Opcode;
 use super::function::Function;
 use super::function_call::FunctionCall;
-use super::super::amxmod::Opcode;
 
 #[derive(Debug, Clone)]
 pub enum TreeElementType {

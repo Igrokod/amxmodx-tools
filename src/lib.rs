@@ -8,7 +8,7 @@ extern crate enum_primitive;
 extern crate log;
 #[macro_use]
 extern crate failure;
-pub mod util;
-pub mod amxmodx;
 pub mod amxmod;
+pub mod amxmodx;
 pub mod ast;
+pub mod util;

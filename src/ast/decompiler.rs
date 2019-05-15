@@ -1,12 +1,12 @@
+use super::super::amxmod::Opcode;
+use super::super::amxmod::OpcodeType::*;
+use super::super::amxmod::Plugin as AmxPlugin;
+use super::super::amxmod::CELLSIZE;
+use super::function_call::{Argument, FunctionCall};
 use super::Function as AstFunction;
 use super::Plugin as AstPlugin;
 use super::TreeElementType;
 use super::TreeElementType::*;
-use super::function_call::{Argument, FunctionCall};
-use super::super::amxmod::CELLSIZE;
-use super::super::amxmod::Opcode;
-use super::super::amxmod::OpcodeType::*;
-use super::super::amxmod::Plugin as AmxPlugin;
 
 pub struct Decompiler {
     pub amx_plugin: AmxPlugin,
@@ -226,9 +226,7 @@ impl Decompiler {
                     let native_args: Vec<_> = args_opcodes
                         .iter()
                         .map(|o| o.param.unwrap())
-                        .map(|addr| {
-                            amx_plugin.read_constant_auto_type(addr as usize).unwrap()
-                        })
+                        .map(|addr| amx_plugin.read_constant_auto_type(addr as usize).unwrap())
                         .map(|constant| Argument::from(constant))
                         .rev()
                         .collect();

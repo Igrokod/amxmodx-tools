@@ -1,7 +1,7 @@
+use super::super::amxmod::Opcode;
 use super::TreeElement;
 use super::TreeElementType;
 use super::TreeElementType::*;
-use super::super::amxmod::Opcode;
 
 pub struct Plugin {
     pub tree_elements: Vec<TreeElementType>,
@@ -15,7 +15,9 @@ impl Plugin {
             tree_elements.push(OpcodeType(opcode));
         }
 
-        Ok(Plugin { tree_elements: tree_elements })
+        Ok(Plugin {
+            tree_elements: tree_elements,
+        })
     }
 }
 

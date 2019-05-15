@@ -1,5 +1,5 @@
-use super::File;
 use super::super::super::util::TryFrom;
+use super::File;
 use failure::Error;
 use std::fs::File as IoFile;
 use std::io::Read;

@@ -1,4 +1,4 @@
-use super::{AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION, Plugin};
+use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use std::io::Cursor;
@@ -21,16 +21,18 @@ impl TryFrom<Vec<u8>> for Plugin {
         let mut reader = Cursor::new(&bin);
 
         {
-            let size = reader.read_u32::<LittleEndian>().context("EOF on amx size")?;
+            let size = reader
+                .read_u32::<LittleEndian>()
+                .context("EOF on amx size")?;
             trace!("size:\t{}", size);
         }
 
         // Magic
         {
             // TODO: test
-            let magic = reader.read_u16::<LittleEndian>().context(
-                "EOF on amx magic",
-            )?;
+            let magic = reader
+                .read_u16::<LittleEndian>()
+                .context("EOF on amx magic")?;
             if magic != AMXMOD_MAGIC {
                 Err(AmxParseError::InvalidMagic(AMXMOD_MAGIC, magic))?;
             }
@@ -61,57 +63,69 @@ impl TryFrom<Vec<u8>> for Plugin {
         }
 
         // TODO: Parse flags
-        let flags = reader.read_u16::<LittleEndian>().context(
-            "EOF on amx flags",
-        )?;
+        let flags = reader
+            .read_u16::<LittleEndian>()
+            .context("EOF on amx flags")?;
         trace!("flags:\t0x{:X}", flags);
 
-        let defsize = reader.read_u16::<LittleEndian>().context(
-            "EOF on amx defsize",
-        )?;
+        let defsize = reader
+            .read_u16::<LittleEndian>()
+            .context("EOF on amx defsize")?;
         trace!("defsize:\t{}", defsize);
 
-        let cod = reader.read_u32::<LittleEndian>().context("EOF on amx cod")?;
+        let cod = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx cod")?;
         trace!("cod:\t0x{:X}", cod);
 
-        let dat = reader.read_u32::<LittleEndian>().context("EOF on amx dat")?;
+        let dat = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx dat")?;
         trace!("dat:\t0x{:X}", dat);
 
-        let hea = reader.read_u32::<LittleEndian>().context("EOF on amx hea")?;
+        let hea = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx hea")?;
         trace!("hea:\t0x{:X}", hea);
 
-        let stp = reader.read_u32::<LittleEndian>().context("EOF on amx stp")?;
+        let stp = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx stp")?;
         trace!("stp:\t0x{:X}", stp);
 
-        let cip = reader.read_u32::<LittleEndian>().context("EOF on amx cip")?;
+        let cip = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx cip")?;
         trace!("cip:\t0x{:X}", cip);
 
-        let publics = reader.read_u32::<LittleEndian>().context(
-            "EOF on amx publics",
-        )?;
+        let publics = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx publics")?;
         trace!("publics:\t0x{:X}", publics);
 
-        let natives = reader.read_u32::<LittleEndian>().context(
-            "EOF on amx natives",
-        )?;
+        let natives = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx natives")?;
         trace!("natives:\t0x{:X}", natives);
 
-        let libraries = reader.read_u32::<LittleEndian>().context(
-            "EOF on amx libraries",
-        )?;
+        let libraries = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx libraries")?;
         trace!("libraries:\t0x{:X}", libraries);
 
-        let pubvars = reader.read_u32::<LittleEndian>().context(
-            "EOF on amx pubvars",
-        )?;
+        let pubvars = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx pubvars")?;
         trace!("pubvars:\t0x{:X}", pubvars);
 
-        let tags = reader.read_u32::<LittleEndian>().context("EOF on amx tags")?;
+        let tags = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx tags")?;
         trace!("tags:\t0x{:X}", tags);
 
-        let nametable = reader.read_u32::<LittleEndian>().context(
-            "EOF on amx nametable",
-        )?;
+        let nametable = reader
+            .read_u32::<LittleEndian>()
+            .context("EOF on amx nametable")?;
         trace!("nametable:\t0x{:X}", nametable);
 
         Ok(Plugin {
@@ -135,8 +149,8 @@ impl TryFrom<Vec<u8>> for Plugin {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use super::super::Plugin;
+    use super::*;
     use util::tests::load_fixture;
 
     #[test]
