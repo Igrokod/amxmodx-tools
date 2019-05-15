@@ -59,7 +59,7 @@ impl Decompiler {
 
             // Accumulate function opcodes
             // should be the last before top level opcodes accumulation
-            if let Some(mut f) = current_function.as_mut() {
+            if let Some(f) = current_function.as_mut() {
                 f.tree_elements.push(OpcodeType(opcode));
                 continue;
             }
@@ -94,12 +94,12 @@ impl Decompiler {
 
         for function in functions {
             let mut addr = 0;
-            let mut current_tree = &mut function.tree_elements;
+            let current_tree = &mut function.tree_elements;
 
             // Iterate and modify over function tree
             while addr < current_tree.len() {
                 addr += 1;
-                let mut position = addr - 1;
+                let position = addr - 1;
 
                 let opcode = {
                     // Should never fail
@@ -142,7 +142,7 @@ impl Decompiler {
 
         for function in functions {
             let mut addr = 0;
-            let mut current_tree = &mut function.tree_elements;
+            let current_tree = &mut function.tree_elements;
 
             // Iterate and modify over function tree
             while addr < current_tree.len() {
