@@ -2,6 +2,7 @@
 name = "rxxma"
 version = "0.0.1"
 authors = ["Fedcomp"]
+edition = "2018"
 
 [features]
 # Treat warnings as a build error.

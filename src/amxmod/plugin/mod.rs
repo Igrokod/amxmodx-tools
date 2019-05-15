@@ -150,9 +150,9 @@ mod tests {
     use super::Native;
     use super::Plugin;
     use super::Public;
+    use crate::util::tests::load_fixture;
+    use crate::util::try_from::TryFrom;
     use std::ffi::CString;
-    use util::tests::load_fixture;
-    use util::try_from::TryFrom;
 
     // TODO: Support amx extraction in programm itself
     // fn extract_section_to_file(amxmodx_bin: &[u8], section_number: usize) {

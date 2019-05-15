@@ -1,5 +1,5 @@
 use super::TreeElement;
-use amxmod::plugin::ConstantParam;
+use crate::amxmod::plugin::ConstantParam;
 use std::convert::From;
 use std::ffi::CString;
 

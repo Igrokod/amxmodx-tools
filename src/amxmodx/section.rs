@@ -1,9 +1,9 @@
 use super::super::amxmod::Plugin;
+use crate::util::TryFrom;
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use flate2::read::ZlibDecoder;
 use std::io::{Cursor, Read, Seek, SeekFrom};
-use util::TryFrom;
 
 #[derive(Debug, PartialEq)]
 pub struct Section {

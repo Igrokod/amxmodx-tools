@@ -1,8 +1,8 @@
 use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
+use crate::util::TryFrom;
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use std::io::Cursor;
-use util::TryFrom;
 
 #[derive(Debug, Fail)]
 enum AmxParseError {
@@ -151,7 +151,7 @@ impl TryFrom<Vec<u8>> for Plugin {
 mod tests {
     use super::super::Plugin;
     use super::*;
-    use util::tests::load_fixture;
+    use crate::util::tests::load_fixture;
 
     #[test]
     fn it_load_plugins_when_it_is_correct() {

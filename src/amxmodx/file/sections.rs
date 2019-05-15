@@ -28,9 +28,9 @@ impl File {
 mod tests {
     use super::super::super::Section;
     use super::File as AmxmodxFile;
+    use crate::util::try_from::TryFrom;
     use std::fs::File;
     use std::io::prelude::*;
-    use util::try_from::TryFrom;
 
     fn load_fixture(filename: &str) -> Vec<u8> {
         let mut file_bin: Vec<u8> = Vec::new();

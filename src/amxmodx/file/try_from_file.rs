@@ -20,8 +20,8 @@ impl TryFrom<PathBuf> for File {
 #[cfg(test)]
 mod tests {
     use super::File as AmxmodxFile;
+    use crate::util::try_from::TryFrom;
     use std::path::PathBuf;
-    use util::try_from::TryFrom;
 
     #[test]
     fn it_try_from_file() {
