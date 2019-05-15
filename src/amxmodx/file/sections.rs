@@ -1,7 +1,9 @@
+use failure::Error;
+use log::trace;
+
 use super::super::Section;
 use super::File;
 use super::AMXX_HEADER_SIZE;
-use failure::Error;
 
 impl File {
     pub fn sections(&self) -> Result<Vec<Section>, Error> {

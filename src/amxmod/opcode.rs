@@ -1,9 +1,12 @@
-use super::opcode_type::*;
-use byteorder::{LittleEndian, ReadBytesExt};
-use enum_primitive::FromPrimitive;
 use std::io;
 use std::io::{Read, Seek, SeekFrom};
 use std::str;
+
+use byteorder::{LittleEndian, ReadBytesExt};
+use enum_primitive::FromPrimitive;
+use log::trace;
+
+use super::opcode_type::*;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Opcode {

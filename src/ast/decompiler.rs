@@ -1,3 +1,5 @@
+use log::trace;
+
 use super::super::amxmod::Opcode;
 use super::super::amxmod::OpcodeType::*;
 use super::super::amxmod::Plugin as AmxPlugin;

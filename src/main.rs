@@ -1,7 +1,5 @@
-#[macro_use]
-extern crate log;
-
 use failure::format_err;
+use log::trace;
 
 use std::convert::TryFrom;
 use std::path::PathBuf;

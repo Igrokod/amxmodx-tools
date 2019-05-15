@@ -1,8 +1,9 @@
 use std::convert::TryFrom;
+use std::io::Cursor;
 
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
-use std::io::Cursor;
+use log::trace;
 
 use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
 

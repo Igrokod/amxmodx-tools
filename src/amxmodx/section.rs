@@ -4,6 +4,7 @@ use std::io::{Cursor, Read, Seek, SeekFrom};
 use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use flate2::read::ZlibDecoder;
+use log::trace;
 
 use super::super::amxmod::Plugin;
 
