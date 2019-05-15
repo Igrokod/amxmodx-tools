@@ -8,7 +8,7 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use failure::{Error, ResultExt};
 use log::trace;
 
-use super::{Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
+use super::{Flags, Plugin, AMXMOD_MAGIC, AMX_VERSION, FILE_VERSION};
 
 #[derive(Debug, Fail)]
 enum AmxParseError {
@@ -18,6 +18,11 @@ enum AmxParseError {
     InvalidFileVersion(u8, u8),
     #[fail(display = "Invalid amx version, expected: {}, got: {}", _0, _1)]
     InvalidAmxVersion(u8, u8),
+    #[fail(
+        display = "Invalid bit value for amx flags (contains unknown flags) {}",
+        _0
+    )]
+    InvalidAmxFlags(u16),
 }
 
 impl TryFrom<Vec<u8>> for Plugin {
@@ -72,7 +77,10 @@ impl TryFrom<Vec<u8>> for Plugin {
         let flags = reader
             .read_u16::<LittleEndian>()
             .context("EOF on amx flags")?;
-        trace!("flags:\t0x{:X}", flags);
+        trace!("raw flags:\t0x{:X}", flags);
+
+        let flags = Flags::from_bits(flags).ok_or_else(|| AmxParseError::InvalidAmxFlags(flags))?;
+        trace!("parsed flags:\t{:?}", flags);
 
         let defsize = reader
             .read_u16::<LittleEndian>()
@@ -155,7 +163,7 @@ impl TryFrom<Vec<u8>> for Plugin {
 
 #[cfg(test)]
 mod tests {
-    use super::super::Plugin;
+    use super::super::{Flags, Plugin};
     use super::*;
     use crate::util::tests::load_fixture;
 
@@ -164,7 +172,7 @@ mod tests {
         let amxmod_bin = load_fixture("simple.amx183");
         let extracted_plugin = Plugin::try_from(amxmod_bin.clone()).unwrap();
         let expected_plugin = Plugin {
-            flags: 2,
+            flags: Flags::DEBUG,
             defsize: 8,
             cod: 116,
             dat: 192,
