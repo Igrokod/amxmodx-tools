@@ -1,10 +1,7 @@
-extern crate clap;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
-extern crate rxxma;
-#[macro_use]
-extern crate failure;
+
+use failure::format_err;
 
 use std::convert::TryFrom;
 use std::path::PathBuf;
