@@ -1,5 +1,5 @@
-use super::super::amxmod::Opcode;
-use super::super::amxmod::Public;
+use super::super::amx::Opcode;
+use super::super::amx::Public;
 use super::TreeElement;
 use super::TreeElementType;
 use std::fmt;

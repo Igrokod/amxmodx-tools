@@ -7,8 +7,8 @@ use std::path::PathBuf;
 use clap::{App, Arg};
 use failure::Error;
 
-use rxxma::amxmod::Plugin as AmxPlugin;
-use rxxma::amxmodx::File as AmxmodxFile;
+use rxxma::amx::Plugin as AmxPlugin;
+use rxxma::amxx::File as AmxmodxFile;
 use rxxma::ast::Decompiler;
 use rxxma::ast::TreeElement;
 

@@ -1,4 +1,4 @@
-use super::super::amxmod::Opcode;
+use super::super::amx::Opcode;
 use super::function::Function;
 use super::function_call::FunctionCall;
 

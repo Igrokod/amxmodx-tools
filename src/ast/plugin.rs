@@ -1,4 +1,4 @@
-use super::super::amxmod::Opcode;
+use super::super::amx::Opcode;
 use super::TreeElement;
 use super::TreeElementType;
 use super::TreeElementType::*;
