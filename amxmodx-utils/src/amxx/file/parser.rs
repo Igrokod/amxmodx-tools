@@ -1,4 +1,4 @@
-use std::convert::TryFrom;
+use std::convert::{TryFrom, TryInto};
 use std::io::Cursor;
 use std::mem::size_of;
 
@@ -11,7 +11,7 @@ const HEADER_SIZE: usize = size_of::<u32>() + size_of::<u16>() + size_of::<u8>()
 const MAGIC: u32 = 0x414d5858;
 const SUPPORTED_VERSION: u16 = 768;
 
-impl TryFrom<&[u8]> for File {
+impl<'file_bin> TryFrom<&'file_bin [u8]> for File<'file_bin> {
     type Error = ParseError;
 
     fn try_from(source: &[u8]) -> Result<File, Self::Error> {
@@ -38,7 +38,18 @@ impl TryFrom<&[u8]> for File {
             return Err(ParseError::NoSections);
         }
 
-        Ok(File { sections_count })
+        let bin_position: usize = reader
+            .position()
+            .try_into()
+            .expect("HEADER_SIZE is small on any platform to fit");
+
+        // Cut binary to only include raw sections
+        let sections_bin = &source[bin_position..];
+
+        Ok(File {
+            sections_count,
+            sections_bin,
+        })
     }
 }
 
