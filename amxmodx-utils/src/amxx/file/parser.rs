@@ -9,7 +9,7 @@ use bytes::Buf;
 use super::{File, ParseError};
 
 // magic:u32 + version:u16 + sections:u8
-const HEADER_SIZE: usize = size_of::<u32>() + size_of::<u16>() + size_of::<u8>();
+pub(crate) const HEADER_SIZE: usize = size_of::<u32>() + size_of::<u16>() + size_of::<u8>();
 const MAGIC: u32 = 0x414d5858;
 const SUPPORTED_VERSION: u16 = 768;
 

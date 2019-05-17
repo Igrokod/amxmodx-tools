@@ -1,8 +1,10 @@
-mod error;
+mod errors;
 mod parser;
+mod section;
 mod sections;
 
-pub use error::ParseError;
+pub use errors::ParseError;
+pub use section::Section;
 pub use sections::SectionsIterator;
 
 #[derive(Debug)]
