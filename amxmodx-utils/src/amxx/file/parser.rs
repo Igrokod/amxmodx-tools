@@ -1,6 +1,8 @@
 use std::convert::{TryFrom, TryInto};
-use std::io::Cursor;
+use std::fs::File as IoFile;
+use std::io::{Cursor, Read};
 use std::mem::size_of;
+use std::path::{Path, PathBuf};
 
 use bytes::Buf;
 
@@ -56,11 +58,36 @@ impl TryFrom<&[u8]> for File {
     }
 }
 
+impl TryFrom<&Path> for File {
+    type Error = ParseError;
+
+    fn try_from(source: &Path) -> Result<File, Self::Error> {
+        let mut file = IoFile::open(source)?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents)?;
+
+        Self::try_from(&contents[..])
+    }
+}
+
+impl TryFrom<PathBuf> for File {
+    type Error = ParseError;
+
+    fn try_from(source: PathBuf) -> Result<File, Self::Error> {
+        let mut file = IoFile::open(source)?;
+        let mut contents = vec![];
+        file.read_to_end(&mut contents)?;
+
+        Self::try_from(&contents[..])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::convert::TryFrom;
     use std::fs::File as IoFile;
     use std::io::{self, Read};
+    use std::path::{Path, PathBuf};
 
     use super::{File as AmxxFile, ParseError};
     use crate::amxx::file::parser::SUPPORTED_VERSION;
@@ -77,10 +104,25 @@ mod tests {
         _read_file(path).expect(&format!("Could not read {} file", path))
     }
 
+    // TODO: Compare with headerless sections
     #[test]
     fn it_parses_correct_file() {
         let plugin_bin = read_file("test/fixtures/amxx/simple.amxx183");
         let _plugin = AmxxFile::try_from(&plugin_bin[..]).expect("Could not parse amxx file");
+    }
+
+    // TODO: Compare with headerless sections
+    #[test]
+    fn it_parses_correct_file_from_path() {
+        let _plugin = AmxxFile::try_from(Path::new("test/fixtures/amxx/simple.amxx183"))
+            .expect("Could not parse amxx file");
+    }
+
+    // TODO: Compare with headerless sections
+    #[test]
+    fn it_parses_correct_file_from_pathbuf() {
+        let _plugin = AmxxFile::try_from(PathBuf::from("test/fixtures/amxx/simple.amxx183"))
+            .expect("Could not parse amxx file");
     }
 
     #[test]
