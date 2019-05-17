@@ -6,14 +6,14 @@ pub use error::ParseError;
 pub use sections::SectionsIterator;
 
 #[derive(Debug)]
-pub struct File<'sections_bin> {
+pub struct File {
     sections_count: u8,
-    sections_bin: &'sections_bin [u8],
+    sections_bin: Vec<u8>,
 }
 
-impl<'sections_bin> File<'sections_bin> {
+impl File {
     pub fn sections(&self) -> SectionsIterator {
-        SectionsIterator::new(self.sections_count, self.sections_bin)
+        SectionsIterator::new(self.sections_count, &self.sections_bin)
     }
 }
 
@@ -32,10 +32,12 @@ mod tests {
             SectionsIterator {
                 sections_count: 1,
                 bin: EXPECTED_SECTIONS_BINARY,
+                ..
             } => (),
             SectionsIterator {
                 sections_count,
                 bin,
+                ..
             } => panic!(
                 "sections() must return sections iterator with inherited values, actual: {:?}",
                 SectionsIterator::new(sections_count, bin)

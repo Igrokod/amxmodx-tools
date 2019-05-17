@@ -11,7 +11,7 @@ const HEADER_SIZE: usize = size_of::<u32>() + size_of::<u16>() + size_of::<u8>()
 const MAGIC: u32 = 0x414d5858;
 const SUPPORTED_VERSION: u16 = 768;
 
-impl<'file_bin> TryFrom<&'file_bin [u8]> for File<'file_bin> {
+impl TryFrom<&[u8]> for File {
     type Error = ParseError;
 
     fn try_from(source: &[u8]) -> Result<File, Self::Error> {
@@ -44,7 +44,10 @@ impl<'file_bin> TryFrom<&'file_bin [u8]> for File<'file_bin> {
             .expect("HEADER_SIZE is small on any platform to fit");
 
         // Cut binary to only include raw sections
-        let sections_bin = &source[bin_position..];
+        let sections_bin = source
+            .get(bin_position..)
+            .ok_or_else(|| ParseError::NoSections)?
+            .to_owned();
 
         Ok(File {
             sections_count,
