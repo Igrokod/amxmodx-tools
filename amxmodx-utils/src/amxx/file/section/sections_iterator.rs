@@ -2,9 +2,9 @@ use std::io::Cursor;
 
 use bytes::Buf;
 
-use super::parser::HEADER_SIZE as AMXX_HEADER_SIZE;
-use super::section::{Section, SectionMetadata, HEADER_SIZE as SECTION_HEADER_SIZE};
-use super::ParseError;
+use super::super::parser::HEADER_SIZE as AMXX_HEADER_SIZE;
+use super::super::ParseError;
+use super::{Section, SectionMetadata, HEADER_SIZE as SECTION_HEADER_SIZE};
 
 // TODO: Find a way to remove pub(crate)
 #[derive(Debug)]
@@ -44,6 +44,7 @@ impl<'sections_bin> Iterator for SectionsIterator<'sections_bin> {
             Some(slice) => slice,
             None => {
                 self.stop_iteration = true;
+                // TODO: Custom error messages for section
                 return Some(Err(ParseError::InvalidSection));
             }
         };

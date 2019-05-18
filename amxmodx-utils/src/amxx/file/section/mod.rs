@@ -1,3 +1,7 @@
+mod sections_iterator;
+
+pub use sections_iterator::SectionsIterator;
+
 // TODO: Make it sum of mem::size_of calls
 pub(crate) const HEADER_SIZE: usize = 17;
 

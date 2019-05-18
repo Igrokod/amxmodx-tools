@@ -1,11 +1,9 @@
 mod errors;
 mod parser;
 mod section;
-mod sections;
 
 pub use errors::ParseError;
-pub use section::Section;
-pub use sections::SectionsIterator;
+pub use section::{Section, SectionsIterator};
 
 #[derive(Debug)]
 pub struct File {
