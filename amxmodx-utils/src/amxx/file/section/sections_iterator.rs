@@ -9,7 +9,7 @@ use super::{Section, SectionMetadata, HEADER_SIZE as SECTION_HEADER_SIZE};
 // TODO: Find a way to remove pub(crate)
 #[derive(Debug)]
 pub struct SectionsIterator<'sections_bin> {
-    curr: u8,
+    current_section: u8,
     stop_iteration: bool,
     pub(crate) sections_count: u8,
     pub(crate) bin: &'sections_bin [u8],
@@ -17,11 +17,11 @@ pub struct SectionsIterator<'sections_bin> {
 
 impl<'sections_bin> SectionsIterator<'sections_bin> {
     pub fn new(sections_count: u8, bin: &'sections_bin [u8]) -> SectionsIterator<'sections_bin> {
-        let curr = 0;
+        let current_section = 0;
         let stop_iteration = false;
 
         SectionsIterator {
-            curr,
+            current_section,
             stop_iteration,
             sections_count,
             bin,
@@ -33,11 +33,11 @@ impl<'sections_bin> Iterator for SectionsIterator<'sections_bin> {
     type Item = Result<Section<'sections_bin>, ParseError>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.stop_iteration || self.curr == self.sections_count {
+        if self.stop_iteration || self.current_section == self.sections_count {
             return None;
         }
 
-        let current_position: usize = SECTION_HEADER_SIZE * usize::from(self.curr);
+        let current_position: usize = SECTION_HEADER_SIZE * usize::from(self.current_section);
         let section_range = current_position..(current_position + SECTION_HEADER_SIZE);
 
         let section_header = match self.bin.get(section_range) {
@@ -57,9 +57,9 @@ impl<'sections_bin> Iterator for SectionsIterator<'sections_bin> {
         let memsize = header_reader.get_u32_le();
         let metadata = SectionMetadata::new(cellsize, disksize, imagesize, memsize);
 
-        // Offset to section compressed body
         let offset = (header_reader.get_u32_le() as usize) - AMXX_HEADER_SIZE;
-        let compressed_body = match self.bin.get(offset..(disksize as usize)) {
+        let section_compressed_body_range = offset..(offset + (disksize as usize));
+        let compressed_body = match self.bin.get(section_compressed_body_range) {
             Some(slice) => slice,
             None => {
                 self.stop_iteration = true;
@@ -67,7 +67,7 @@ impl<'sections_bin> Iterator for SectionsIterator<'sections_bin> {
             }
         };
 
-        self.curr += 1;
+        self.current_section += 1;
 
         Some(Ok(Section::new(metadata, compressed_body)))
     }
