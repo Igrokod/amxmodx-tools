@@ -2,7 +2,7 @@ mod sections_iterator;
 
 pub use sections_iterator::SectionsIterator;
 
-// TODO: Make it sum of mem::size_of calls
+// TODO: Calculate it using C style header struct
 pub(crate) const HEADER_SIZE: usize = 17;
 
 #[derive(Copy, Clone, Debug, PartialEq)]

@@ -8,8 +8,12 @@ use bytes::Buf;
 
 use super::{File, ParseError};
 
-// magic:u32 + version:u16 + sections:u8
-pub(crate) const HEADER_SIZE: usize = size_of::<u32>() + size_of::<u16>() + size_of::<u8>();
+const MAGIC_FIELD_SIZE: usize = size_of::<u32>();
+const VERSION_FIELD_SIZE: usize = size_of::<u16>();
+const SECTIONS_FIELD_SIZE: usize = size_of::<u8>();
+// TODO: Use raw C structure and calculate size based on it
+pub(crate) const HEADER_SIZE: usize = MAGIC_FIELD_SIZE + VERSION_FIELD_SIZE + SECTIONS_FIELD_SIZE;
+
 const MAGIC: u32 = 0x414d5858;
 const SUPPORTED_VERSION: u16 = 768;
 
@@ -23,6 +27,7 @@ impl TryFrom<&[u8]> for File {
 
         let mut reader = Cursor::new(source);
 
+        // TODO: Consider creating amxx::file::Header type for parsing it
         if reader.get_u32_le() != MAGIC {
             return Err(ParseError::MagicMismatch);
         }
