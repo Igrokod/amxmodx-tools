@@ -8,6 +8,16 @@ edition = "2018"
 # Treat warnings as a build error.
 strict = []
 
+[profile.release]
+opt-level = 3
+debug = false
+lto = true
+debug-assertions = false
+codegen-units = 1
+panic = 'unwind'
+incremental = false
+overflow-checks = true
+
 [dependencies]
 clap = "^2.30.0"
 byteorder = "1"
@@ -18,3 +28,4 @@ env_logger = "0.5.4"
 ascii = "0.8"
 failure = "0.1.1"
 bitflags = "1.0.4"
+amxmodx-utils = { path = "../amxmodx-utils" }
