@@ -1,6 +1,6 @@
 mod errors;
 mod parser;
-mod section;
+pub mod section;
 
 pub use errors::ParseError;
 pub use section::{Section, SectionsIterator};
@@ -14,6 +14,11 @@ pub struct File {
 impl File {
     pub fn sections(&self) -> SectionsIterator {
         SectionsIterator::new(self.sections_count, &self.sections_bin)
+    }
+
+    // TODO: test
+    pub fn sections_count(&self) -> u8 {
+        self.sections_count
     }
 }
 

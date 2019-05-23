@@ -11,3 +11,5 @@ strict = []
 [dependencies]
 bytes = "0.4.12"
 flate2 = { version = "1.0", features = ["rust_backend"], default-features = false }
+failure = "0.1.5"
+bitflags = "1.0.4"

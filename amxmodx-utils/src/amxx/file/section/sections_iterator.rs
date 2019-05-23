@@ -4,7 +4,7 @@ use bytes::Buf;
 
 use super::super::parser::HEADER_SIZE as AMXX_HEADER_SIZE;
 use super::super::ParseError;
-use super::{Section, SectionMetadata, HEADER_SIZE as SECTION_HEADER_SIZE};
+use super::{Metadata, Section, HEADER_SIZE as SECTION_HEADER_SIZE};
 
 // TODO: Find a way to remove pub(crate)
 #[derive(Debug)]
@@ -55,7 +55,7 @@ impl<'sections_bin> Iterator for SectionsIterator<'sections_bin> {
         let disksize = header_reader.get_u32_le();
         let imagesize = header_reader.get_u32_le();
         let memsize = header_reader.get_u32_le();
-        let metadata = SectionMetadata::new(cellsize, disksize, imagesize, memsize);
+        let metadata = Metadata::new(cellsize, disksize, imagesize, memsize);
 
         let offset = (header_reader.get_u32_le() as usize) - AMXX_HEADER_SIZE;
         let section_compressed_body_range = offset..(offset + (disksize as usize));
@@ -78,7 +78,7 @@ mod tests {
     use std::fs::File;
     use std::io::{self, Read};
 
-    use super::{SectionMetadata, SectionsIterator};
+    use super::{Metadata, SectionsIterator};
 
     fn _read_file(path: &str) -> io::Result<Vec<u8>> {
         let mut file = File::open(path)?;
@@ -105,7 +105,7 @@ mod tests {
         assert!(sections_iterator.next().is_none());
         assert_eq!(
             section.metadata(),
-            SectionMetadata {
+            Metadata {
                 cellsize: 4,
                 disksize: 330,
                 imagesize: 578,

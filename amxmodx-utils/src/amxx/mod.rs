@@ -1,4 +1,4 @@
 /// AmxModX related utils
-mod file;
+pub mod file;
 
 pub use file::*;
