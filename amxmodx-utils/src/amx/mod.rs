@@ -5,9 +5,8 @@ pub mod parser;
 
 use failure::Fail;
 use opcodes_iterator::OpcodesIterator;
-use std::mem::size_of;
 
-pub type Cell = u32;
+pub type UCell = u32;
 
 bitflags! {
     pub struct Flags: u16 {
