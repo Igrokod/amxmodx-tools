@@ -10,7 +10,7 @@ const FILE_VERSION: u8 = 8;
 const AMX_VERSION: u8 = 8;
 
 #[derive(Debug, Fail)]
-pub enum ParseError {
+pub enum HeaderParseError {
     #[fail(display = "Header is corrupted")]
     HeaderEOF,
     #[fail(display = "Amx magic mismatch, expected: 0x{:X}, got: 0x{:X}", _0, _1)]
@@ -26,7 +26,7 @@ pub enum ParseError {
     UnexpectedAmxFlags(u16),
 }
 
-// Struct used to calculate fields size for reading
+// Struct used only to calculate header size for reading
 #[repr(C)]
 struct RawAmxHeader {
     size: u32,
@@ -49,13 +49,13 @@ struct RawAmxHeader {
 }
 
 impl TryFrom<&[u8]> for File {
-    type Error = ParseError;
+    type Error = HeaderParseError;
 
     fn try_from(bin: &[u8]) -> Result<Self, Self::Error> {
         // TODO: Test
         let header_bin = bin
             .get(0..size_of::<RawAmxHeader>())
-            .ok_or_else(|| ParseError::HeaderEOF)?;
+            .ok_or_else(|| HeaderParseError::HeaderEOF)?;
 
         let mut header_reader = Cursor::new(header_bin);
 
@@ -79,22 +79,30 @@ impl TryFrom<&[u8]> for File {
 
         // TODO: Test
         if magic != MAGIC {
-            return Err(ParseError::MagicMismatch(MAGIC, magic));
+            return Err(HeaderParseError::MagicMismatch(MAGIC, magic));
         }
 
         // TODO: Test
         if file_version != FILE_VERSION {
-            return Err(ParseError::FileVersionMismatch(FILE_VERSION, file_version));
+            return Err(HeaderParseError::FileVersionMismatch(
+                FILE_VERSION,
+                file_version,
+            ));
         }
 
         // TODO: Test
         if amx_version != AMX_VERSION {
-            return Err(ParseError::AmxVersionMismatch(AMX_VERSION, amx_version));
+            return Err(HeaderParseError::AmxVersionMismatch(
+                AMX_VERSION,
+                amx_version,
+            ));
         }
 
-        // TODO: Test
-        let flags = Flags::from_bits(flags).ok_or_else(|| ParseError::UnexpectedAmxFlags(flags))?;
+        // TODO: defsize mismatch
 
+        // TODO: Test
+        let flags =
+            Flags::from_bits(flags).ok_or_else(|| HeaderParseError::UnexpectedAmxFlags(flags))?;
         let bin = bin.to_owned();
 
         Ok(File {
