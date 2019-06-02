@@ -2,11 +2,17 @@ pub mod opcode;
 pub mod opcode_type;
 pub mod opcodes_iterator;
 pub mod parser;
+pub mod function;
 
+use crate::utils::ByteStringExt;
+use bytes::Buf;
 use failure::Fail;
+use function::{Native, Public};
 use opcodes_iterator::OpcodesIterator;
+use std::io::Cursor;
 
 pub type UCell = u32;
+const SUPPORTED_DEFSIZE: usize = 8;
 
 bitflags! {
     pub struct Flags: u16 {
@@ -24,8 +30,16 @@ bitflags! {
 
 #[derive(Debug, Fail)]
 pub enum ParseError {
-    #[fail(display = "Cod section got invalid offset")]
-    CodSectionMismatch,
+    #[fail(display = "Cod section have invalid range")]
+    CodSection,
+    #[fail(display = "Publics section have invalid range")]
+    PublicsSection,
+    #[fail(display = "Some of publics have invalid name offset")]
+    InvalidPublicNameOffset,
+    #[fail(display = "Natives section have invalid range")]
+    NativesSection,
+    #[fail(display = "Some of natives have invalid name offset")]
+    InvalidNativeNameOffset,
 }
 
 #[derive(Debug, PartialEq)]
@@ -52,11 +66,83 @@ impl File {
     pub fn cod_slice(&self) -> Result<&[u8], ParseError> {
         self.bin
             .get((self.cod as usize)..(self.dat as usize))
-            .ok_or_else(|| ParseError::CodSectionMismatch)
+            .ok_or(ParseError::CodSection)
     }
 
+    // TODO: Test
+    fn publics_slice(&self) -> Result<&[u8], ParseError> {
+        self.bin
+            .get((self.publics as usize)..(self.natives as usize))
+            .ok_or(ParseError::PublicsSection)
+    }
+
+    // TODO: Test
+    fn natives_slice(&self) -> Result<&[u8], ParseError> {
+        self.bin
+            .get((self.natives as usize)..(self.libraries as usize))
+            .ok_or(ParseError::NativesSection)
+    }
+
+    // Iterator is used to keep proper responsibility principle
+    // and it gives more flexibility when iterator is returned
     pub fn opcodes(&self) -> Result<OpcodesIterator, ParseError> {
         Ok(OpcodesIterator::new(self.cod_slice()?))
+    }
+
+    // TODO: United Natives/Publics iterator for responsibility principle?
+    // TODO: Test
+    pub fn natives(&self) -> Result<Vec<Native>, ParseError> {
+        let natives_slice = self.natives_slice()?;
+        let natives_count: f32 = natives_slice.len() as f32 / SUPPORTED_DEFSIZE as f32;
+        if natives_count != 0f32 {
+            return Err(ParseError::NativesSection);
+        }
+
+        let mut results: Vec<Native> = vec![];
+        let mut reader = Cursor::new(natives_slice);
+
+        for _ in 0..(natives_count as usize) {
+            let address = reader.get_u32_le();
+            let name_pointer = reader.get_u32_le();
+            let name = self
+                .bin
+                .get((name_pointer as usize)..)
+                .and_then(ByteStringExt::read_cstr)
+                .ok_or(ParseError::InvalidNativeNameOffset)?;
+
+            let native = Native::new(name.to_string_lossy(), address);
+            results.push(native);
+        }
+
+        Ok(results)
+    }
+
+    // TODO: United Natives/Publics iterator for responsibility principle?
+    // TODO: Test
+    pub fn publics(&self) -> Result<Vec<Public>, ParseError> {
+        let publics_slice = self.publics_slice()?;
+        let publics_count: f32 = publics_slice.len() as f32 / SUPPORTED_DEFSIZE as f32;
+        if publics_count != 0f32 {
+            return Err(ParseError::PublicsSection);
+        }
+
+        let mut results: Vec<Public> = vec![];
+        let mut reader = Cursor::new(publics_slice);
+
+        for _ in 0..(publics_count as usize) {
+            let address = reader.get_u32_le();
+            let name_pointer = reader.get_u32_le();
+            let name = self
+                .bin
+                .get((name_pointer as usize)..)
+                .and_then(ByteStringExt::read_cstr)
+                .ok_or(ParseError::InvalidPublicNameOffset)?;
+
+            let public = Public::new(name.to_string_lossy(), address);
+            results.push(public);
+        }
+
+        Ok(results)
     }
 }
 
