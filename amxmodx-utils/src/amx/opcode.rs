@@ -4,13 +4,31 @@ use std::fmt;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Opcode {
+    address: u32,
     code: OpcodeType,
     argument: Option<UCell>,
 }
 
 impl Opcode {
     pub fn new(code: OpcodeType, argument: Option<UCell>) -> Opcode {
-        Opcode { code, argument }
+        // FIXME: Save actual address
+        let address = 0;
+        Opcode {
+            address,
+            code,
+            argument,
+        }
+    }
+
+    // TODO: Test
+    #[inline]
+    pub fn code(&self) -> OpcodeType {
+        self.code
+    }
+
+    #[inline]
+    pub fn argument(&self) -> Option<UCell> {
+        self.argument
     }
 }
 
