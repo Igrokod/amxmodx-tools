@@ -1,16 +1,28 @@
+#![cfg_attr(feature = "strict", deny(warnings))]
+
+#[macro_use]
+extern crate bitflags;
+#[macro_use]
+extern crate enum_primitive;
+#[macro_use]
+extern crate failure;
+
+pub mod ast;
+pub mod util;
+
 use failure::format_err;
 use log::trace;
 
 use std::convert::TryFrom;
-use std::path::PathBuf;
+use std::path::Path;
 
 use clap::{App, Arg};
 use failure::Error;
 
-use rxxma::amx::Plugin as AmxPlugin;
-use rxxma::amxx::File as AmxmodxFile;
-use rxxma::ast::Decompiler;
-use rxxma::ast::TreeElement;
+use amxmodx_utils::amx::File as AmxFile;
+use amxmodx_utils::amxx::File as AmxxFile;
+use ast::Decompiler;
+use ast::TreeElement;
 
 macro_rules! die {
     ($fmt:expr) => ({
@@ -23,35 +35,33 @@ macro_rules! die {
     });
 }
 
-fn str_to_err(e: &str) -> Error {
-    format_err!("{}", e)
-}
+fn decompile(file_path: &str) -> Result<String, Error> {
+    let amxx_file = AmxxFile::try_from(Path::new(file_path))?;
+    let mut amx_file: Option<AmxFile> = None;
 
-fn read_32bit_section(file_path: PathBuf) -> Result<AmxPlugin, Error> {
-    let amxmodx_file = AmxmodxFile::try_from(file_path)?;
-    let sections = amxmodx_file.sections()?;
+    for section_result in amxx_file.sections() {
+        let section = section_result?;
 
-    let section_32bit = sections
-        .into_iter()
-        .find(|ref s| s.cellsize == 4)
-        .ok_or("File has no 32 bit sections. 64 bit are not supported")
-        .map_err(str_to_err)?;
+        if section.metadata().cellsize != 4 {
+            continue;
+        }
 
-    trace!("-------------------------------------------");
-    trace!(" Reading amxmod plugin from 32 bit section ");
-    trace!("-------------------------------------------");
-    section_32bit.unpack_section()
-}
+        let section_body = section.unpack_body()?;
+        amx_file = Some(AmxFile::try_from(&section_body[..])?);
+    }
 
-fn decompile(file_path: PathBuf) -> Result<String, Error> {
-    let amxmod_plugin = read_32bit_section(file_path)?;
+    let amx_file = match amx_file {
+        Some(amx_file) => amx_file,
+        None => return Err(format_err!("No 32 bit section found in file")),
+    };
 
-    let mut decompiler = Decompiler::from(amxmod_plugin);
+    let mut decompiler = Decompiler::from(amx_file);
     decompiler.opcodes_into_functions();
     decompiler.decompile_opcodes_by_templates().unwrap();
     let ast_plugin = decompiler.into_tree();
+    let ast_string = ast_plugin.to_string(0).map_err(|e| format_err!("{}", e))?;
 
-    Ok(ast_plugin.to_string(0).map_err(str_to_err)?)
+    Ok(ast_string)
 }
 
 fn main() {
@@ -70,11 +80,12 @@ fn main() {
         )
         .get_matches();
 
-    let file_path = matches.value_of("file").unwrap();
-    let file_path_buf = PathBuf::from(file_path);
+    let file_path = matches
+        .value_of("file")
+        .expect("File path is always required in clap");
 
     let source = {
-        match decompile(file_path_buf) {
+        match decompile(file_path) {
             Ok(s) => s,
             Err(e) => die!("{}", e),
         }

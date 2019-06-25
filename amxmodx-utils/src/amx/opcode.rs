@@ -1,8 +1,10 @@
 use super::opcode_type::OpcodeType;
 use super::UCell;
 use std::fmt;
+use getset::Getters;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Getters)]
+#[get = "pub"]
 pub struct Opcode {
     address: u32,
     code: OpcodeType,
@@ -18,17 +20,6 @@ impl Opcode {
             code,
             argument,
         }
-    }
-
-    // TODO: Test
-    #[inline]
-    pub fn code(&self) -> OpcodeType {
-        self.code
-    }
-
-    #[inline]
-    pub fn argument(&self) -> Option<UCell> {
-        self.argument
     }
 }
 

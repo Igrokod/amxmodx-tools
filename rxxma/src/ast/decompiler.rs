@@ -1,22 +1,42 @@
 use log::trace;
+use std::mem::size_of;
 
-use super::super::amx::Opcode;
-use super::super::amx::OpcodeType::*;
-use super::super::amx::Plugin as AmxPlugin;
-use super::super::amx::CELLSIZE;
+use amxmodx_utils::amx::opcode::Opcode;
+use amxmodx_utils::amx::opcode_type::OpcodeType::*;
+use amxmodx_utils::amx::File as AmxFile;
+
 use super::function_call::{Argument, FunctionCall};
 use super::Function as AstFunction;
 use super::Plugin as AstPlugin;
 use super::TreeElementType;
 use super::TreeElementType::*;
 
+// TODO: Refactor me
+const CELLSIZE: usize = size_of::<u32>();
+
 pub struct Decompiler {
-    pub amx_plugin: AmxPlugin,
+    pub amx_plugin: AmxFile,
     pub ast_plugin: AstPlugin,
 }
 
+fn read_constant_auto_type<'amx_file_bin>(amx_file: &'amx_file_bin AmxFile, addr: usize) -> Result<ConstantParam, &'amx_file_bin str> {
+    if addr > (amx_file.hea() - amx_file.dat()) {
+        return Ok(ConstantParam::Cell(addr as u32));
+    }
+
+    // TODO: Error handling
+    let byte_slice: Vec<u8> = amx_file.dat_slice().unwrap()[addr..]
+        .chunks(CELLSIZE)
+        .map(|x| x[0])
+        .take_while(|&x| x != 0)
+        .collect();
+
+    let string = CString::new(byte_slice).unwrap();
+    Ok(ConstantParam::String(string))
+}
+
 impl Decompiler {
-    pub fn from(amx_plugin: AmxPlugin) -> Decompiler {
+    pub fn from(amx_plugin: AmxFile) -> Decompiler {
         let opcodes = amx_plugin.opcodes().unwrap();
 
         Decompiler {
@@ -46,14 +66,14 @@ impl Decompiler {
             };
 
             // Open function
-            if opcode.code == OP_PROC {
+            if opcode.code() == OpProc {
                 // TODO: Check if func already exist
                 current_function = Some(AstFunction::from(&opcode, &public_list));
                 continue;
             }
 
             // Close function
-            if opcode.code == OP_RETN && current_function.is_some() {
+            if opcode.code() == OpRetn && current_function.is_some() {
                 new_tree.push(FunctionType(current_function.unwrap()));
                 current_function = None;
                 continue;
@@ -108,7 +128,7 @@ impl Decompiler {
                     _ => continue,
                 };
 
-                if opcode.code != OP_BREAK {
+                if opcode.code() != OpBreak {
                     break;
                 }
 
@@ -151,7 +171,7 @@ impl Decompiler {
                     _ => continue,
                 };
 
-                if opcode.code == OP_SYSREQ_C {
+                if opcode.code() == OpSysreqC {
                     let sysreq_opcode = &opcode;
                     // Take previous PUSH.C to get args count
                     let native_arguments_count = {
@@ -163,12 +183,12 @@ impl Decompiler {
                         };
 
                         // Weird native call, ignore
-                        if opcode.code != OP_PUSH_C {
+                        if opcode.code() != OpPushC {
                             trace!("Native call got no arguments definition");
                             continue;
                         }
 
-                        opcode.param.unwrap() as usize / CELLSIZE
+                        opcode.argument().unwrap() as usize / CELLSIZE
                     };
 
                     // Sysreq.c (current) - PUSH.c with args count - args count
@@ -209,7 +229,7 @@ impl Decompiler {
                         .collect();
 
                     let is_having_non_push_c_opcodes =
-                        args_opcodes.iter().any(|o| o.code != OP_PUSH_C);
+                        args_opcodes.iter().any(|o| o.code() != OpPushC);
                     if is_having_non_push_c_opcodes {
                         trace!("Invalid native call arguments");
                         continue;
@@ -217,14 +237,14 @@ impl Decompiler {
 
                     let native_args: Vec<_> = args_opcodes
                         .iter()
-                        .map(|o| o.param.unwrap())
+                        .map(|o| o.argument().unwrap())
                         .map(|addr| amx_plugin.read_constant_auto_type(addr as usize).unwrap())
                         .map(Argument::from)
                         .rev()
                         .collect();
 
-                    let native_index = sysreq_opcode.param.unwrap() as usize;
-                    let native_name = (&natives[native_index].name).clone().into_string().unwrap();
+                    let native_index = sysreq_opcode.argument().unwrap() as usize;
+                    let native_name = (&natives[native_index].name).to_string();
 
                     let ast_function_call = FunctionCall {
                         name: native_name,
@@ -233,7 +253,7 @@ impl Decompiler {
 
                     current_tree[position] = FunctionCallType(ast_function_call);
 
-                    // Check for trash OP_STACK
+                    // Check for trash OpStack
                     {
                         let opcode_position = position + 1;
 
@@ -249,12 +269,12 @@ impl Decompiler {
                             }
                         };
 
-                        if opcode.code == OP_STACK {
+                        if opcode.code() == OpStack {
                             current_tree.remove(opcode_position);
                         }
                     }
 
-                    // Check for trash OP_ZERO_PRI
+                    // Check for trash OpZeroPri
                     {
                         let opcode_position = position + 1;
 
@@ -270,12 +290,12 @@ impl Decompiler {
                             }
                         };
 
-                        if opcode.code == OP_ZERO_PRI {
+                        if opcode.code() == OpZeroPri {
                             current_tree.remove(opcode_position);
                         }
                     }
 
-                    // Check for trash OP_BREAK
+                    // Check for trash OpBreak
                     {
                         let opcode_position = position + 1;
 
@@ -291,7 +311,7 @@ impl Decompiler {
                             }
                         };
 
-                        if opcode.code == OP_BREAK {
+                        if opcode.code() == OpBreak {
                             current_tree.remove(opcode_position);
                         }
                     }

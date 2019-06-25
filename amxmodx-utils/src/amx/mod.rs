@@ -10,6 +10,7 @@ use failure::Fail;
 use function::{Native, Public};
 use opcodes_iterator::OpcodesIterator;
 use std::io::Cursor;
+use getset::Getters;
 
 pub type UCell = u32;
 const SUPPORTED_DEFSIZE: usize = 8;
@@ -32,6 +33,8 @@ bitflags! {
 pub enum ParseError {
     #[fail(display = "Cod section have invalid range")]
     CodSection,
+    #[fail(display = "Dat section have invalid range")]
+    DatSection,
     #[fail(display = "Publics section have invalid range")]
     PublicsSection,
     #[fail(display = "Some of publics have invalid name offset")]
@@ -42,7 +45,8 @@ pub enum ParseError {
     InvalidNativeNameOffset,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Getters)]
+#[get = "pub"]
 pub struct File {
     bin: Vec<u8>,
     flags: Flags,
@@ -70,6 +74,13 @@ impl File {
     }
 
     // TODO: Test
+    pub fn dat_slice(&self) -> Result<&[u8], ParseError> {
+        self.bin
+            .get((self.dat as usize)..(self.hea as usize))
+            .ok_or(ParseError::DatSection)
+    }
+
+    // TODO: Test
     fn publics_slice(&self) -> Result<&[u8], ParseError> {
         self.bin
             .get((self.publics as usize)..(self.natives as usize))
@@ -91,7 +102,7 @@ impl File {
 
     // TODO: United Natives/Publics iterator for responsibility principle?
     // TODO: Test
-    pub fn natives(&self) -> Result<Vec<Native>, ParseError> {
+    pub fn native_functions(&self) -> Result<Vec<Native>, ParseError> {
         let natives_slice = self.natives_slice()?;
         let natives_count: f32 = natives_slice.len() as f32 / SUPPORTED_DEFSIZE as f32;
         if natives_count != 0f32 {
@@ -119,7 +130,7 @@ impl File {
 
     // TODO: United Natives/Publics iterator for responsibility principle?
     // TODO: Test
-    pub fn publics(&self) -> Result<Vec<Public>, ParseError> {
+    pub fn public_functions(&self) -> Result<Vec<Public>, ParseError> {
         let publics_slice = self.publics_slice()?;
         let publics_count: f32 = publics_slice.len() as f32 / SUPPORTED_DEFSIZE as f32;
         if publics_count != 0f32 {

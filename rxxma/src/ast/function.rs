@@ -1,5 +1,5 @@
-use super::super::amx::Opcode;
-use super::super::amx::Public;
+use amxmodx_utils::amx::opcode::Opcode;
+use amxmodx_utils::amx::function::Public;
 use super::TreeElement;
 use super::TreeElementType;
 use std::fmt;
@@ -30,7 +30,7 @@ pub struct Function {
 impl Function {
     pub fn from(opcode: &Opcode, public_list: &[Public]) -> Function {
         static mut STOCK_FUNCTION_COUNTER: u32 = 0;
-        let opcode_public = public_list.iter().find(|x| x.address == opcode.address);
+        let opcode_public = public_list.iter().find(|x| x.address() == opcode.address());
 
         let visibility = if opcode_public.is_some() {
             FunctionVisibility::Public
@@ -39,7 +39,7 @@ impl Function {
         };
 
         let name = if let Some(p) = opcode_public {
-            p.name.to_str().unwrap().to_string()
+            p.name().to_string()
         } else {
             // I like to live dangerously
             unsafe {
